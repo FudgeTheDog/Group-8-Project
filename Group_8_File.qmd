@@ -4,4 +4,11 @@ format: html
 editor: visual
 ---
 
-Test 2
+```{r}
+#| include: false
+library("readxl")
+Table1 <- read_excel("Data/Table1_clean.xlsx")
+Table1
+Table1_raw <- read_excel("Data/Table1_raw.xlsx")
+Table1_raw
+```
