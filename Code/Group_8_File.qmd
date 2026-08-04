@@ -15,15 +15,132 @@ Table1_raw <- read_excel("../Data/Table1_raw.xlsx")
 Table1_raw
 ```
 
-::: {style="text-align: center;"}
 ### Introduction
-:::
 
-### Method {style="text-align: center;"}
+Back Ground on article
 
-### Results {style="text-align: center;"}
+Aim of this analysis
 
-### Discussion {style="text-align: center;"}
+### Method
+
+Explain Data: Number of observations, variables, variables measured, and mention/reference table 1 from paper.
+
+Statistical Methods we are going to use} (Can put code in here for what we do to show the method of doing it if needed but I will talk to lecturer about if we need to or not.
+
+We are doing this on the elements, comparing them to each other to find patterns, etc. names down the rows of the table are just the observations
+
+Methods we are doing based off lectures, can change if needed
+
+1.  Descriptive Statistics (mean, median, sd, min, max of each variable)
+
+```{r}
+
+```
+
+2.  Exploratory pairs plot 17x17 for the 17 variables
+
+    1.  Histograms with notched box plots for each variable to show distribution
+
+    2.  contours to show 3rd box plots (can also just do heat map for with contours painted on)
+
+    3.  Mahalanobis-coloured scatter plots
+
+        {All of this in one plot, as seen in the one in inference - 03.pdf
+
+```{r}
+
+```
+
+3.  Covariance Matrix and Correlation Heat map
+
+```{r}
+
+```
+
+```{r}
+
+```
+
+4.  Check normality
+
+    1.  Mahalanobis Distance Plot
+
+```{r}
+
+```
+
+```         
+2.  Chi-square Q-Q plot
+```
+
+```{r}
+
+```
+
+5.  Principle component analysis (For the reproducing question)
+
+    1.  Scree plot
+    2.  scores plot
+    3.  loadings
+
+```{r}
+
+```
+
+6.  Cluster analysis
+
+```{r}
+
+```
+
+### Results
+
+1.  Show and explain through the analysis of what we described in the method. (Plots will go in here with explanations and thoughts under each.
+
+<!-- -->
+
+1.  Descriptive Statistics (mean, median, sd, min, max of each variable)
+
+```{r}
+
+```
+
+2.  Exploratory pairs plot 17x17 for the 17 variables
+
+```{r}
+
+```
+
+3.  Covariance Matrix and Correlation Heat map
+
+```{r}
+
+```
+
+4.  Normality Check
+
+```{r}
+
+```
+
+5.  Principle component analysis (For the reproducing question)
+
+```{r}
+
+```
+
+6.  Cluster analysis
+
+```{r}
+
+```
+
+### Discussion
+
+Answering the questions from the document and any other conclusions we have from the analysis
+
+1.  Can you find groups in these data?
+2.  Can you reproduce Fig. 2? Do you agree with the conclusions the authors draw about the “zones”?
 
 #### References {style="text-align: center;"}
 
