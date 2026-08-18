@@ -9,17 +9,25 @@ editor: visual
 ```{r}
 #| include: false
 library("readxl")
-Table1 <- read_excel("../Data/Table1_clean.xlsx")
-Table1
 Table1_raw <- read_excel("../Data/Table1_raw.xlsx")
-Table1_raw
+
+Table1 <- read_excel("../Data/Table1_clean.xlsx")
+Table1$`17-Cl*` <- as.numeric(Table1$`17-Cl*`)
+Table1$`15-P` <- as.numeric(Table1$`15-P`)
+Table1$`29-Cu` <- as.numeric(Table1$`29-Cu`)
+```
+
+```{r}
+#| include: false
+library(tidyverse)
+library(gt)
 ```
 
 ### Introduction
 
-Back Ground on article
+The original article, PIXE analysis on Maya blue in Prehispanic and colonial mural paintings, by Sanchez del Rio et al (2006), sampled, analysed and grouped using PCA on murals containing Maya Blue across different archaeological sites. Across the sites they collected 35 samples from murals and either the elements concentration percent or the ratio of micro gram to gram ratio of that element in the mural. From these murals they sampled 17 different chemical elements from sodium to lead. They found with their PCA that 70% of the total variance in the sample population can be described using only the first three principle components and was similar to what was observed in other art forms. The three zones found were CEC, Prehispanic, and convents. with the first clustering in a small group separate from the rest of the samples.
 
-Aim of this analysis
+The aim of this analysis is too find groups within the data and reproduce what was found in the original paper. The reason for this is to support the conclusions made by Sanchez del rio et al (2006) about the 3 zones found in the data during their analysis. By doing this we can reassert the claims made about the differences between the different types of murals and their distinct zones of style. This report will contain both a quantitative and qualitative analysis of the data, as well as PCA and cluster analysis to explore the possible groups in the data.
 
 ### Method
 
@@ -34,7 +42,50 @@ Methods we are doing based off lectures, can change if needed
 1.  Descriptive Statistics (mean, median, sd, min, max of each variable)
 
 ```{r}
+desc_pixe <- Table1 %>% 
+  summarise(
+    across(
+      where(is.numeric),
+      list(
+        M = ~mean(.x, na.rm = TRUE),
+        SD = ~sd(.x, na.rm = TRUE),
+        Median = ~median(.x, na.rm = TRUE),
+        Min = ~min(.x, na.rm =TRUE),
+        Max = ~max(.x, na.rm =TRUE)
+      )
+    )
+  ) %>% 
+  pivot_longer(
+    everything(),
+    names_to = c("Elements", "Statistics"),
+    names_sep = "_",
+    values_to = "Value"
+  ) %>% 
+  pivot_wider(
+    names_from = Statistics,
+    values_from = Value
+  )
 
+desc_pixe %>% 
+  gt() %>% 
+  cols_label(
+    Elements = "Element",
+    M = md("*M*"),
+    SD = md("*SD*"),
+    Median = "Median",
+    Min = "Minimum",
+    Max = "Maximum"
+  ) %>% 
+  fmt_number(
+    columns = c(M, SD, Median, Min, Max),
+    decimals = 2
+  ) %>% 
+  tab_header(
+    title = "Descriptive Statistics of Elemental Concentrations"
+  ) %>% 
+  tab_options(
+    table.font.size = 12
+  )
 ```
 
 2.  Exploratory pairs plot 17x17 for the 17 variables
@@ -69,9 +120,7 @@ Methods we are doing based off lectures, can change if needed
 
 ```
 
-```         
-2.  Chi-square Q-Q plot
-```
+2. Chi-square
 
 ```{r}
 

@@ -27,6 +27,41 @@ ul.task-list li input[type="checkbox"] {
   margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
   vertical-align: middle;
 }
+/* CSS for syntax highlighting */
+html { -webkit-text-size-adjust: 100%; }
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+  }
+pre.numberSource { margin-left: 3em;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
 </style>
 
 
@@ -79,8 +114,8 @@ ul.task-list li input[type="checkbox"] {
 
 <section id="introduction" class="level3">
 <h3 class="anchored" data-anchor-id="introduction">Introduction</h3>
-<p>Back Ground on article</p>
-<p>Aim of this analysis</p>
+<p>The original article, PIXE analysis on Maya blue in Prehispanic and colonial mural paintings, by Sanchez del Rio et al (2006), sampled, analysed and grouped using PCA on murals containing Maya Blue across different archaeological sites. Across the sites they collected 35 samples from murals and either the elements concentration percent or the ratio of micro gram to gram ratio of that element in the mural. From these murals they sampled 18 different chemical elements from sodium to lead. They found with their PCA that 70% of the total variance in the sample population can be described using only the first three principle components and was similar to what was observed in other art forms. The three zones found were CEC, Prehispanic, and convents. with the first clustering in a small group separate from the rest of the samples.</p>
+<p>The aim of this analysis is too find groups within the data and reproduce what was found in the original paper. The reason for this is to support the conclusions made by Sanchez del rio et al (2006) about the 3 zones found in the data during their analysis. By doing this we can reassert the claims made about the differences between the different types of murals and their distinct zones of style. This report will contain both a quantitative and qualitative analysis of the data, as well as PCA and cluster analysis to explore the possible groups in the data.</p>
 </section>
 <section id="method" class="level3">
 <h3 class="anchored" data-anchor-id="method">Method</h3>
@@ -91,6 +126,659 @@ ul.task-list li input[type="checkbox"] {
 <ol type="1">
 <li>Descriptive Statistics (mean, median, sd, min, max of each variable)</li>
 </ol>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb1"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a>desc_pixe <span class="ot">&lt;-</span> Table1 <span class="sc">%&gt;%</span> </span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">summarise</span>(</span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a>    <span class="fu">across</span>(</span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a>      <span class="fu">where</span>(is.numeric),</span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a>      <span class="fu">list</span>(</span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a>        <span class="at">M =</span> <span class="sc">~</span><span class="fu">mean</span>(.x, <span class="at">na.rm =</span> <span class="cn">TRUE</span>),</span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a>        <span class="at">SD =</span> <span class="sc">~</span><span class="fu">sd</span>(.x, <span class="at">na.rm =</span> <span class="cn">TRUE</span>),</span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a>        <span class="at">Median =</span> <span class="sc">~</span><span class="fu">median</span>(.x, <span class="at">na.rm =</span> <span class="cn">TRUE</span>),</span>
+<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a>        <span class="at">Min =</span> <span class="sc">~</span><span class="fu">min</span>(.x, <span class="at">na.rm =</span><span class="cn">TRUE</span>),</span>
+<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a>        <span class="at">Max =</span> <span class="sc">~</span><span class="fu">max</span>(.x, <span class="at">na.rm =</span><span class="cn">TRUE</span>)</span>
+<span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a>      )</span>
+<span id="cb1-12"><a href="#cb1-12" aria-hidden="true" tabindex="-1"></a>    )</span>
+<span id="cb1-13"><a href="#cb1-13" aria-hidden="true" tabindex="-1"></a>  ) <span class="sc">%&gt;%</span> </span>
+<span id="cb1-14"><a href="#cb1-14" aria-hidden="true" tabindex="-1"></a>  <span class="fu">pivot_longer</span>(</span>
+<span id="cb1-15"><a href="#cb1-15" aria-hidden="true" tabindex="-1"></a>    <span class="fu">everything</span>(),</span>
+<span id="cb1-16"><a href="#cb1-16" aria-hidden="true" tabindex="-1"></a>    <span class="at">names_to =</span> <span class="fu">c</span>(<span class="st">"Elements"</span>, <span class="st">"Statistics"</span>),</span>
+<span id="cb1-17"><a href="#cb1-17" aria-hidden="true" tabindex="-1"></a>    <span class="at">names_sep =</span> <span class="st">"_"</span>,</span>
+<span id="cb1-18"><a href="#cb1-18" aria-hidden="true" tabindex="-1"></a>    <span class="at">values_to =</span> <span class="st">"Value"</span></span>
+<span id="cb1-19"><a href="#cb1-19" aria-hidden="true" tabindex="-1"></a>  ) <span class="sc">%&gt;%</span> </span>
+<span id="cb1-20"><a href="#cb1-20" aria-hidden="true" tabindex="-1"></a>  <span class="fu">pivot_wider</span>(</span>
+<span id="cb1-21"><a href="#cb1-21" aria-hidden="true" tabindex="-1"></a>    <span class="at">names_from =</span> Statistics,</span>
+<span id="cb1-22"><a href="#cb1-22" aria-hidden="true" tabindex="-1"></a>    <span class="at">values_from =</span> Value</span>
+<span id="cb1-23"><a href="#cb1-23" aria-hidden="true" tabindex="-1"></a>  )</span>
+<span id="cb1-24"><a href="#cb1-24" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-25"><a href="#cb1-25" aria-hidden="true" tabindex="-1"></a>desc_pixe <span class="sc">%&gt;%</span> </span>
+<span id="cb1-26"><a href="#cb1-26" aria-hidden="true" tabindex="-1"></a>  <span class="fu">gt</span>() <span class="sc">%&gt;%</span> </span>
+<span id="cb1-27"><a href="#cb1-27" aria-hidden="true" tabindex="-1"></a>  <span class="fu">cols_label</span>(</span>
+<span id="cb1-28"><a href="#cb1-28" aria-hidden="true" tabindex="-1"></a>    <span class="at">Elements =</span> <span class="st">"Element"</span>,</span>
+<span id="cb1-29"><a href="#cb1-29" aria-hidden="true" tabindex="-1"></a>    <span class="at">M =</span> <span class="fu">md</span>(<span class="st">"*M*"</span>),</span>
+<span id="cb1-30"><a href="#cb1-30" aria-hidden="true" tabindex="-1"></a>    <span class="at">SD =</span> <span class="fu">md</span>(<span class="st">"*SD*"</span>),</span>
+<span id="cb1-31"><a href="#cb1-31" aria-hidden="true" tabindex="-1"></a>    <span class="at">Median =</span> <span class="st">"Median"</span>,</span>
+<span id="cb1-32"><a href="#cb1-32" aria-hidden="true" tabindex="-1"></a>    <span class="at">Min =</span> <span class="st">"Minimum"</span>,</span>
+<span id="cb1-33"><a href="#cb1-33" aria-hidden="true" tabindex="-1"></a>    <span class="at">Max =</span> <span class="st">"Maximum"</span></span>
+<span id="cb1-34"><a href="#cb1-34" aria-hidden="true" tabindex="-1"></a>  ) <span class="sc">%&gt;%</span> </span>
+<span id="cb1-35"><a href="#cb1-35" aria-hidden="true" tabindex="-1"></a>  <span class="fu">fmt_number</span>(</span>
+<span id="cb1-36"><a href="#cb1-36" aria-hidden="true" tabindex="-1"></a>    <span class="at">columns =</span> <span class="fu">c</span>(M, SD, Median, Min, Max),</span>
+<span id="cb1-37"><a href="#cb1-37" aria-hidden="true" tabindex="-1"></a>    <span class="at">decimals =</span> <span class="dv">2</span></span>
+<span id="cb1-38"><a href="#cb1-38" aria-hidden="true" tabindex="-1"></a>  ) <span class="sc">%&gt;%</span> </span>
+<span id="cb1-39"><a href="#cb1-39" aria-hidden="true" tabindex="-1"></a>  <span class="fu">tab_header</span>(</span>
+<span id="cb1-40"><a href="#cb1-40" aria-hidden="true" tabindex="-1"></a>    <span class="at">title =</span> <span class="st">"Descriptive Statistics of Elemental Concentrations"</span></span>
+<span id="cb1-41"><a href="#cb1-41" aria-hidden="true" tabindex="-1"></a>  ) <span class="sc">%&gt;%</span> </span>
+<span id="cb1-42"><a href="#cb1-42" aria-hidden="true" tabindex="-1"></a>  <span class="fu">tab_options</span>(</span>
+<span id="cb1-43"><a href="#cb1-43" aria-hidden="true" tabindex="-1"></a>    <span class="at">table.font.size =</span> <span class="dv">12</span></span>
+<span id="cb1-44"><a href="#cb1-44" aria-hidden="true" tabindex="-1"></a>  )</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output-display">
+<div id="uwelfghjzd" style="padding-left:0px;padding-right:0px;padding-top:10px;padding-bottom:10px;overflow-x:auto;overflow-y:auto;width:auto;height:auto;">
+<style>#uwelfghjzd table {
+  font-family: system-ui, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+#uwelfghjzd thead, #uwelfghjzd tbody, #uwelfghjzd tfoot, #uwelfghjzd tr, #uwelfghjzd td, #uwelfghjzd th {
+  border-style: none;
+}
+
+#uwelfghjzd p {
+  margin: 0;
+  padding: 0;
+}
+
+#uwelfghjzd .gt_table {
+  display: table;
+  border-collapse: collapse;
+  line-height: normal;
+  margin-left: auto;
+  margin-right: auto;
+  color: #333333;
+  font-size: 12px;
+  font-weight: normal;
+  font-style: normal;
+  background-color: #FFFFFF;
+  width: auto;
+  border-top-style: solid;
+  border-top-width: 2px;
+  border-top-color: #A8A8A8;
+  border-right-style: none;
+  border-right-width: 2px;
+  border-right-color: #D3D3D3;
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #A8A8A8;
+  border-left-style: none;
+  border-left-width: 2px;
+  border-left-color: #D3D3D3;
+}
+
+#uwelfghjzd .gt_caption {
+  padding-top: 4px;
+  padding-bottom: 4px;
+}
+
+#uwelfghjzd .gt_title {
+  color: #333333;
+  font-size: 125%;
+  font-weight: initial;
+  padding-top: 4px;
+  padding-bottom: 4px;
+  padding-left: 5px;
+  padding-right: 5px;
+  border-bottom-color: #FFFFFF;
+  border-bottom-width: 0;
+}
+
+#uwelfghjzd .gt_subtitle {
+  color: #333333;
+  font-size: 85%;
+  font-weight: initial;
+  padding-top: 3px;
+  padding-bottom: 5px;
+  padding-left: 5px;
+  padding-right: 5px;
+  border-top-color: #FFFFFF;
+  border-top-width: 0;
+}
+
+#uwelfghjzd .gt_heading {
+  background-color: #FFFFFF;
+  text-align: center;
+  border-bottom-color: #FFFFFF;
+  border-left-style: none;
+  border-left-width: 1px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 1px;
+  border-right-color: #D3D3D3;
+}
+
+#uwelfghjzd .gt_bottom_border {
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+}
+
+#uwelfghjzd .gt_col_headings {
+  border-top-style: solid;
+  border-top-width: 2px;
+  border-top-color: #D3D3D3;
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+  border-left-style: none;
+  border-left-width: 1px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 1px;
+  border-right-color: #D3D3D3;
+}
+
+#uwelfghjzd .gt_col_heading {
+  color: #333333;
+  background-color: #FFFFFF;
+  font-size: 100%;
+  font-weight: normal;
+  text-transform: inherit;
+  border-left-style: none;
+  border-left-width: 1px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 1px;
+  border-right-color: #D3D3D3;
+  vertical-align: bottom;
+  padding-top: 5px;
+  padding-bottom: 6px;
+  padding-left: 5px;
+  padding-right: 5px;
+  overflow-x: hidden;
+}
+
+#uwelfghjzd .gt_column_spanner_outer {
+  color: #333333;
+  background-color: #FFFFFF;
+  font-size: 100%;
+  font-weight: normal;
+  text-transform: inherit;
+  padding-top: 0;
+  padding-bottom: 0;
+  padding-left: 4px;
+  padding-right: 4px;
+}
+
+#uwelfghjzd .gt_column_spanner_outer:first-child {
+  padding-left: 0;
+}
+
+#uwelfghjzd .gt_column_spanner_outer:last-child {
+  padding-right: 0;
+}
+
+#uwelfghjzd .gt_column_spanner {
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+  vertical-align: bottom;
+  padding-top: 5px;
+  padding-bottom: 5px;
+  overflow-x: hidden;
+  display: inline-block;
+  width: 100%;
+}
+
+#uwelfghjzd .gt_spanner_row {
+  border-bottom-style: hidden;
+}
+
+#uwelfghjzd .gt_group_heading {
+  padding-top: 8px;
+  padding-bottom: 8px;
+  padding-left: 5px;
+  padding-right: 5px;
+  color: #333333;
+  background-color: #FFFFFF;
+  font-size: 100%;
+  font-weight: initial;
+  text-transform: inherit;
+  border-top-style: solid;
+  border-top-width: 2px;
+  border-top-color: #D3D3D3;
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+  border-left-style: none;
+  border-left-width: 1px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 1px;
+  border-right-color: #D3D3D3;
+  vertical-align: middle;
+  text-align: left;
+}
+
+#uwelfghjzd .gt_empty_group_heading {
+  padding: 0.5px;
+  color: #333333;
+  background-color: #FFFFFF;
+  font-size: 100%;
+  font-weight: initial;
+  border-top-style: solid;
+  border-top-width: 2px;
+  border-top-color: #D3D3D3;
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+  vertical-align: middle;
+}
+
+#uwelfghjzd .gt_from_md > :first-child {
+  margin-top: 0;
+}
+
+#uwelfghjzd .gt_from_md > :last-child {
+  margin-bottom: 0;
+}
+
+#uwelfghjzd .gt_row {
+  padding-top: 8px;
+  padding-bottom: 8px;
+  padding-left: 5px;
+  padding-right: 5px;
+  margin: 10px;
+  border-top-style: solid;
+  border-top-width: 1px;
+  border-top-color: #D3D3D3;
+  border-left-style: none;
+  border-left-width: 1px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 1px;
+  border-right-color: #D3D3D3;
+  vertical-align: middle;
+  overflow-x: hidden;
+}
+
+#uwelfghjzd .gt_stub {
+  color: #333333;
+  background-color: #FFFFFF;
+  font-size: 100%;
+  font-weight: initial;
+  text-transform: inherit;
+  border-right-style: solid;
+  border-right-width: 2px;
+  border-right-color: #D3D3D3;
+  padding-left: 5px;
+  padding-right: 5px;
+}
+
+#uwelfghjzd .gt_stub_row_group {
+  color: #333333;
+  background-color: #FFFFFF;
+  font-size: 100%;
+  font-weight: initial;
+  text-transform: inherit;
+  border-right-style: solid;
+  border-right-width: 2px;
+  border-right-color: #D3D3D3;
+  padding-left: 5px;
+  padding-right: 5px;
+  vertical-align: top;
+}
+
+#uwelfghjzd .gt_row_group_first td {
+  border-top-width: 2px;
+}
+
+#uwelfghjzd .gt_row_group_first th {
+  border-top-width: 2px;
+}
+
+#uwelfghjzd .gt_summary_row {
+  color: #333333;
+  background-color: #FFFFFF;
+  text-transform: inherit;
+  padding-top: 8px;
+  padding-bottom: 8px;
+  padding-left: 5px;
+  padding-right: 5px;
+}
+
+#uwelfghjzd .gt_first_summary_row {
+  border-top-style: solid;
+  border-top-color: #D3D3D3;
+}
+
+#uwelfghjzd .gt_first_summary_row.thick {
+  border-top-width: 2px;
+}
+
+#uwelfghjzd .gt_last_summary_row {
+  padding-top: 8px;
+  padding-bottom: 8px;
+  padding-left: 5px;
+  padding-right: 5px;
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+}
+
+#uwelfghjzd .gt_grand_summary_row {
+  color: #333333;
+  background-color: #FFFFFF;
+  text-transform: inherit;
+  padding-top: 8px;
+  padding-bottom: 8px;
+  padding-left: 5px;
+  padding-right: 5px;
+}
+
+#uwelfghjzd .gt_first_grand_summary_row {
+  padding-top: 8px;
+  padding-bottom: 8px;
+  padding-left: 5px;
+  padding-right: 5px;
+  border-top-style: double;
+  border-top-width: 6px;
+  border-top-color: #D3D3D3;
+}
+
+#uwelfghjzd .gt_last_grand_summary_row_top {
+  padding-top: 8px;
+  padding-bottom: 8px;
+  padding-left: 5px;
+  padding-right: 5px;
+  border-bottom-style: double;
+  border-bottom-width: 6px;
+  border-bottom-color: #D3D3D3;
+}
+
+#uwelfghjzd .gt_striped {
+  background-color: rgba(128, 128, 128, 0.05);
+}
+
+#uwelfghjzd .gt_table_body {
+  border-top-style: solid;
+  border-top-width: 2px;
+  border-top-color: #D3D3D3;
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+}
+
+#uwelfghjzd .gt_footnotes {
+  color: #333333;
+  background-color: #FFFFFF;
+  border-bottom-style: none;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+  border-left-style: none;
+  border-left-width: 2px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 2px;
+  border-right-color: #D3D3D3;
+}
+
+#uwelfghjzd .gt_footnote {
+  margin: 0px;
+  font-size: 90%;
+  padding-top: 4px;
+  padding-bottom: 4px;
+  padding-left: 5px;
+  padding-right: 5px;
+}
+
+#uwelfghjzd .gt_sourcenotes {
+  color: #333333;
+  background-color: #FFFFFF;
+  border-bottom-style: none;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+  border-left-style: none;
+  border-left-width: 2px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 2px;
+  border-right-color: #D3D3D3;
+}
+
+#uwelfghjzd .gt_sourcenote {
+  font-size: 90%;
+  padding-top: 4px;
+  padding-bottom: 4px;
+  padding-left: 5px;
+  padding-right: 5px;
+}
+
+#uwelfghjzd .gt_left {
+  text-align: left;
+}
+
+#uwelfghjzd .gt_center {
+  text-align: center;
+}
+
+#uwelfghjzd .gt_right {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+#uwelfghjzd .gt_font_normal {
+  font-weight: normal;
+}
+
+#uwelfghjzd .gt_font_bold {
+  font-weight: bold;
+}
+
+#uwelfghjzd .gt_font_italic {
+  font-style: italic;
+}
+
+#uwelfghjzd .gt_super {
+  font-size: 65%;
+}
+
+#uwelfghjzd .gt_footnote_marks {
+  font-size: 75%;
+  vertical-align: 0.4em;
+  position: initial;
+}
+
+#uwelfghjzd .gt_asterisk {
+  font-size: 100%;
+  vertical-align: 0;
+}
+
+#uwelfghjzd .gt_indent_1 {
+  text-indent: 5px;
+}
+
+#uwelfghjzd .gt_indent_2 {
+  text-indent: 10px;
+}
+
+#uwelfghjzd .gt_indent_3 {
+  text-indent: 15px;
+}
+
+#uwelfghjzd .gt_indent_4 {
+  text-indent: 20px;
+}
+
+#uwelfghjzd .gt_indent_5 {
+  text-indent: 25px;
+}
+
+#uwelfghjzd .katex-display {
+  display: inline-flex !important;
+  margin-bottom: 0.75em !important;
+}
+
+#uwelfghjzd div.Reactable > div.rt-table > div.rt-thead > div.rt-tr.rt-tr-group-header > div.rt-th-group:after {
+  height: 0px !important;
+}
+</style>
+
+<table class="gt_table caption-top table table-sm table-striped small" data-quarto-bootstrap="false">
+<thead>
+<tr class="gt_heading header">
+<td colspan="6" class="gt_heading gt_title gt_font_normal gt_bottom_border">Descriptive Statistics of Elemental Concentrations</td>
+</tr>
+<tr class="gt_col_headings even">
+<th id="Elements" class="gt_col_heading gt_columns_bottom_border gt_left" data-quarto-table-cell-role="th" scope="col">Element</th>
+<th id="M" class="gt_col_heading gt_columns_bottom_border gt_right" data-quarto-table-cell-role="th" scope="col"><em>M</em></th>
+<th id="SD" class="gt_col_heading gt_columns_bottom_border gt_right" data-quarto-table-cell-role="th" scope="col"><em>SD</em></th>
+<th id="Median" class="gt_col_heading gt_columns_bottom_border gt_right" data-quarto-table-cell-role="th" scope="col">Median</th>
+<th id="Min" class="gt_col_heading gt_columns_bottom_border gt_right" data-quarto-table-cell-role="th" scope="col">Minimum</th>
+<th id="Max" class="gt_col_heading gt_columns_bottom_border gt_right" data-quarto-table-cell-role="th" scope="col">Maximum</th>
+</tr>
+</thead>
+<tbody class="gt_table_body">
+<tr class="odd">
+<td class="gt_row gt_left" headers="Elements">11-Na*</td>
+<td class="gt_row gt_right" headers="M">0.36</td>
+<td class="gt_row gt_right" headers="SD">0.46</td>
+<td class="gt_row gt_right" headers="Median">0.32</td>
+<td class="gt_row gt_right" headers="Min">−0.43</td>
+<td class="gt_row gt_right" headers="Max">1.71</td>
+</tr>
+<tr class="even">
+<td class="gt_row gt_left" headers="Elements">12-Mg*</td>
+<td class="gt_row gt_right" headers="M">2.91</td>
+<td class="gt_row gt_right" headers="SD">2.53</td>
+<td class="gt_row gt_right" headers="Median">1.74</td>
+<td class="gt_row gt_right" headers="Min">0.38</td>
+<td class="gt_row gt_right" headers="Max">9.30</td>
+</tr>
+<tr class="odd">
+<td class="gt_row gt_left" headers="Elements">13-Al*</td>
+<td class="gt_row gt_right" headers="M">3.45</td>
+<td class="gt_row gt_right" headers="SD">1.40</td>
+<td class="gt_row gt_right" headers="Median">3.32</td>
+<td class="gt_row gt_right" headers="Min">1.03</td>
+<td class="gt_row gt_right" headers="Max">7.43</td>
+</tr>
+<tr class="even">
+<td class="gt_row gt_left" headers="Elements">14-Si*</td>
+<td class="gt_row gt_right" headers="M">13.91</td>
+<td class="gt_row gt_right" headers="SD">6.86</td>
+<td class="gt_row gt_right" headers="Median">11.60</td>
+<td class="gt_row gt_right" headers="Min">4.55</td>
+<td class="gt_row gt_right" headers="Max">30.70</td>
+</tr>
+<tr class="odd">
+<td class="gt_row gt_left" headers="Elements">16-S*</td>
+<td class="gt_row gt_right" headers="M">1.69</td>
+<td class="gt_row gt_right" headers="SD">3.03</td>
+<td class="gt_row gt_right" headers="Median">0.47</td>
+<td class="gt_row gt_right" headers="Min">−0.16</td>
+<td class="gt_row gt_right" headers="Max">12.90</td>
+</tr>
+<tr class="even">
+<td class="gt_row gt_left" headers="Elements">17-Cl*</td>
+<td class="gt_row gt_right" headers="M">0.18</td>
+<td class="gt_row gt_right" headers="SD">0.35</td>
+<td class="gt_row gt_right" headers="Median">0.08</td>
+<td class="gt_row gt_right" headers="Min">−0.07</td>
+<td class="gt_row gt_right" headers="Max">1.36</td>
+</tr>
+<tr class="odd">
+<td class="gt_row gt_left" headers="Elements">19-K*</td>
+<td class="gt_row gt_right" headers="M">0.46</td>
+<td class="gt_row gt_right" headers="SD">0.40</td>
+<td class="gt_row gt_right" headers="Median">0.32</td>
+<td class="gt_row gt_right" headers="Min">−0.06</td>
+<td class="gt_row gt_right" headers="Max">1.71</td>
+</tr>
+<tr class="even">
+<td class="gt_row gt_left" headers="Elements">20-Ca*</td>
+<td class="gt_row gt_right" headers="M">35.78</td>
+<td class="gt_row gt_right" headers="SD">13.29</td>
+<td class="gt_row gt_right" headers="Median">37.90</td>
+<td class="gt_row gt_right" headers="Min">2.88</td>
+<td class="gt_row gt_right" headers="Max">57.80</td>
+</tr>
+<tr class="odd">
+<td class="gt_row gt_left" headers="Elements">26-Fe*</td>
+<td class="gt_row gt_right" headers="M">1.15</td>
+<td class="gt_row gt_right" headers="SD">0.87</td>
+<td class="gt_row gt_right" headers="Median">0.93</td>
+<td class="gt_row gt_right" headers="Min">0.38</td>
+<td class="gt_row gt_right" headers="Max">5.18</td>
+</tr>
+<tr class="even">
+<td class="gt_row gt_left" headers="Elements">15-P</td>
+<td class="gt_row gt_right" headers="M">7,568.33</td>
+<td class="gt_row gt_right" headers="SD">26,110.87</td>
+<td class="gt_row gt_right" headers="Median">−895.00</td>
+<td class="gt_row gt_right" headers="Min">−1,700.00</td>
+<td class="gt_row gt_right" headers="Max">99,600.00</td>
+</tr>
+<tr class="odd">
+<td class="gt_row gt_left" headers="Elements">22-Ti</td>
+<td class="gt_row gt_right" headers="M">1,816.86</td>
+<td class="gt_row gt_right" headers="SD">1,286.20</td>
+<td class="gt_row gt_right" headers="Median">1,470.00</td>
+<td class="gt_row gt_right" headers="Min">−520.00</td>
+<td class="gt_row gt_right" headers="Max">5,010.00</td>
+</tr>
+<tr class="even">
+<td class="gt_row gt_left" headers="Elements">25-Mn</td>
+<td class="gt_row gt_right" headers="M">1,133.43</td>
+<td class="gt_row gt_right" headers="SD">2,657.21</td>
+<td class="gt_row gt_right" headers="Median">−120.00</td>
+<td class="gt_row gt_right" headers="Min">−360.00</td>
+<td class="gt_row gt_right" headers="Max">9,120.00</td>
+</tr>
+<tr class="odd">
+<td class="gt_row gt_left" headers="Elements">28-Ni</td>
+<td class="gt_row gt_right" headers="M">12.09</td>
+<td class="gt_row gt_right" headers="SD">30.31</td>
+<td class="gt_row gt_right" headers="Median">16.00</td>
+<td class="gt_row gt_right" headers="Min">−29.00</td>
+<td class="gt_row gt_right" headers="Max">154.00</td>
+</tr>
+<tr class="even">
+<td class="gt_row gt_left" headers="Elements">29-Cu</td>
+<td class="gt_row gt_right" headers="M">2.71</td>
+<td class="gt_row gt_right" headers="SD">15.87</td>
+<td class="gt_row gt_right" headers="Median">−4.00</td>
+<td class="gt_row gt_right" headers="Min">−17.00</td>
+<td class="gt_row gt_right" headers="Max">40.00</td>
+</tr>
+<tr class="odd">
+<td class="gt_row gt_left" headers="Elements">30-Zn</td>
+<td class="gt_row gt_right" headers="M">31.80</td>
+<td class="gt_row gt_right" headers="SD">37.29</td>
+<td class="gt_row gt_right" headers="Median">21.00</td>
+<td class="gt_row gt_right" headers="Min">−14.00</td>
+<td class="gt_row gt_right" headers="Max">164.00</td>
+</tr>
+<tr class="even">
+<td class="gt_row gt_left" headers="Elements">38-Sr</td>
+<td class="gt_row gt_right" headers="M">1,021.43</td>
+<td class="gt_row gt_right" headers="SD">1,703.83</td>
+<td class="gt_row gt_right" headers="Median">500.00</td>
+<td class="gt_row gt_right" headers="Min">90.00</td>
+<td class="gt_row gt_right" headers="Max">8,580.00</td>
+</tr>
+<tr class="odd">
+<td class="gt_row gt_left" headers="Elements">82-Pb</td>
+<td class="gt_row gt_right" headers="M">21.69</td>
+<td class="gt_row gt_right" headers="SD">31.00</td>
+<td class="gt_row gt_right" headers="Median">9.00</td>
+<td class="gt_row gt_right" headers="Min">1.00</td>
+<td class="gt_row gt_right" headers="Max">152.00</td>
+</tr>
+</tbody>
+</table>
+
+</div>
+</div>
+</div>
 <ol start="2" type="1">
 <li><p>Exploratory pairs plot 17x17 for the 17 variables</p>
 <ol type="1">
@@ -109,7 +797,9 @@ ul.task-list li input[type="checkbox"] {
 <li>Mahalanobis Distance Plot</li>
 </ol></li>
 </ol>
-<pre><code>2.  Chi-square Q-Q plot</code></pre>
+<ol start="2" type="1">
+<li>Chi-square</li>
+</ol>
 <ol start="5" type="1">
 <li><p>Principle component analysis (For the reproducing question)</p>
 <ol type="1">
