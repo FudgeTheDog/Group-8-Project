@@ -9,18 +9,14 @@ editor: visual
 ```{r}
 #| include: false
 library("readxl")
+library(tidyverse)
+library(gt)
 Table1_raw <- read_excel("../Data/Table1_raw.xlsx")
 
 Table1 <- read_excel("../Data/Table1_clean.xlsx")
 Table1$`17-Cl*` <- as.numeric(Table1$`17-Cl*`)
 Table1$`15-P` <- as.numeric(Table1$`15-P`)
 Table1$`29-Cu` <- as.numeric(Table1$`29-Cu`)
-```
-
-```{r}
-#| include: false
-library(tidyverse)
-library(gt)
 ```
 
 ### Introduction
@@ -39,10 +35,28 @@ We are doing this on the elements, comparing them to each other to find patterns
 
 Methods we are doing based off lectures, can change if needed
 
-1.  Descriptive Statistics (mean, median, sd, min, max of each variable)
+1.  Data Transformation
+
+There are a few problems with the original data set given in Table 1 of the original paper that need to be corrected to accurately analysis the data.
+    1. Original Data contains both percentages and Ratios of ug/g (micro gram/gram) concentrations of elements in each mural sample. This makes the two sets of concentrations incomparable due to percentages ceiling of 100. To fix this a log10 transformation will be done on the data, as done in the original paper. 
+    2. To do a log10 transformation we must deal with the () bracketed values in the ratio concentrations. These are estimated concentrations that are below the detection limit. To deal with this in the data we can just treat them as the values estimated and remove the brackets for analysis. 
+    3. Lastly we need to deal with the [] in the data set. These values are specifically listed as 0, but aren't considered 0. These values are considered close to the detection limit. As log10(0) is not a real number, for the analysis we will convert 0's in the dataset to 0.1 as a pseudo-count. This will both allow us to compute these values and not shrink the sample size. 
 
 ```{r}
-desc_pixe <- Table1 %>% 
+Table1 <- Table1 %>% 
+  mutate(across(where(is.numeric), abs))
+Table1[is.na(Table1)] <- 0
+Table1[Table1 == 0] <- 0.1
+Table1_log <- Table1 %>% 
+  mutate(across(where(is.numeric), log10))
+Table1_log
+```
+
+
+2.  Descriptive Statistics (mean, median, sd, min, max of each variable)
+
+```{r}
+desc_pixe <- Table1_log %>% 
   summarise(
     across(
       where(is.numeric),
@@ -88,7 +102,7 @@ desc_pixe %>%
   )
 ```
 
-2.  Exploratory pairs plot 17x17 for the 17 variables
+3. Exploratory pairs plot 17x17 for the 17 variables
 
     1.  Histograms with notched box plots for each variable to show distribution
 
@@ -102,7 +116,7 @@ desc_pixe %>%
 
 ```
 
-3.  Covariance Matrix and Correlation Heat map
+4.  Covariance Matrix and Correlation Heat map
 
 ```{r}
 
@@ -112,7 +126,7 @@ desc_pixe %>%
 
 ```
 
-4.  Check normality
+5.  Check normality
 
     1.  Mahalanobis Distance Plot
 
@@ -120,13 +134,13 @@ desc_pixe %>%
 
 ```
 
-2. Chi-square
+    2.  Chi-square
 
 ```{r}
 
 ```
 
-5.  Principle component analysis (For the reproducing question)
+6.  Principle component analysis (For the reproducing question)
 
     1.  Scree plot
     2.  scores plot
@@ -136,7 +150,7 @@ desc_pixe %>%
 
 ```
 
-6.  Cluster analysis
+7.  Cluster analysis
 
 ```{r}
 
