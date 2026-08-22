@@ -11,6 +11,7 @@ editor: visual
 library("readxl")
 library(tidyverse)
 library(gt)
+library(GGally)
 Table1_raw <- read_excel("../Data/Table1_raw.xlsx")
 
 Table1 <- read_excel("../Data/Table1_clean.xlsx")
@@ -43,20 +44,45 @@ There are a few problems with the original data set given in Table 1 of the orig
     3. Lastly we need to deal with the [] in the data set. These values are specifically listed as 0, but aren't considered 0. These values are considered close to the detection limit. As log10(0) is not a real number, for the analysis we will convert 0's in the dataset to 0.1 as a pseudo-count. This will both allow us to compute these values and not shrink the sample size. 
 
 ```{r}
+#| include: false
+#Non transformed table - dont use. 
 Table1 <- Table1 %>% 
   mutate(across(where(is.numeric), abs))
 Table1[is.na(Table1)] <- 0
 Table1[Table1 == 0] <- 0.1
+
+#Log Table - Use as variables become comparable
 Table1_log <- Table1 %>% 
   mutate(across(where(is.numeric), log10))
-Table1_log
 ```
 
+
+```{r}
+#Change table around to long ways for boxplots in future as current table arrangement didnt work.
+
+#This one incase we need it for the non-transformed. 
+Table1_long <- Table1 %>%
+  pivot_longer(
+    cols = -Elements,
+    names_to = "Element_Group",     
+    values_to = "Concentrations"   
+  )
+
+#Main Table we use for boxplot
+Table1_long_log <- Table1_log %>%
+  pivot_longer(
+    cols = -Elements,
+    names_to = "Element_Group",     
+    values_to = "Concentrations"
+  )
+```
 
 2.  Descriptive Statistics (mean, median, sd, min, max of each variable)
 
 ```{r}
-desc_pixe <- Table1_log %>% 
+#| include: false
+# Descriptives table of Raw data - Show why we need to transform
+desc_pixe <- Table1 %>% 
   summarise(
     across(
       where(is.numeric),
@@ -79,12 +105,11 @@ desc_pixe <- Table1_log %>%
     names_from = Statistics,
     values_from = Value
   )
-
-desc_pixe %>% 
+output_desc_pix <- desc_pixe %>% 
   gt() %>% 
   cols_label(
     Elements = "Element",
-    M = md("*M*"),
+    M = md("Mean"),
     SD = md("*SD*"),
     Median = "Median",
     Min = "Minimum",
@@ -95,14 +120,111 @@ desc_pixe %>%
     decimals = 2
   ) %>% 
   tab_header(
-    title = "Descriptive Statistics of Elemental Concentrations"
+    title = "Descriptive Statistics of Elemental Concentrations",
+    subtitle = "Non-Transformed"
   ) %>% 
   tab_options(
     table.font.size = 12
   )
 ```
 
-3. Exploratory pairs plot 17x17 for the 17 variables
+
+```{r}
+#| echo: false
+#Log Transformaed Descriptives Table
+desc_pixe_log <- Table1_log %>% 
+  summarise(
+    across(
+      where(is.numeric),
+      list(
+        M = ~mean(.x, na.rm = TRUE),
+        SD = ~sd(.x, na.rm = TRUE),
+        Median = ~median(.x, na.rm = TRUE),
+        Min = ~min(.x, na.rm =TRUE),
+        Max = ~max(.x, na.rm =TRUE)
+      )
+    )
+  ) %>% 
+  pivot_longer(
+    everything(),
+    names_to = c("Elements", "Statistics"),
+    names_sep = "_",
+    values_to = "Value"
+  ) %>% 
+  pivot_wider(
+    names_from = Statistics,
+    values_from = Value
+  )
+output_desc_pix_log <- desc_pixe_log %>% 
+  gt() %>% 
+  cols_label(
+    Elements = "Element",
+    M = md("Mean"),
+    SD = md("*SD*"),
+    Median = "Median",
+    Min = "Minimum",
+    Max = "Maximum"
+  ) %>% 
+  fmt_number(
+    columns = c(M, SD, Median, Min, Max),
+    decimals = 2
+  ) %>% 
+  tab_header(
+    title = "Descriptive Statistics of Elemental Concentrations",
+    subtitle = "Log10 Transformation"
+  ) %>% 
+  tab_options(
+    table.font.size = 12
+  )
+```
+
+```{r}
+#Box Plot of transformed data
+decp_boxplot <- ggplot(data = Table1_long_log, aes(x = Element_Group, y = Concentrations)) + 
+  geom_boxplot(aes(fill = Element_Group), notch = TRUE, outlier.shape = 1.5) + 
+  theme_bw() +
+  theme(axis.text.x = element_text(size = 7, angle = 90, hjust = 1, vjust = 0.5), 
+        legend.position = "none")
+```
+
+3.  Check normality
+
+    1.  Mahalanobis Distance Plot
+
+```{r}
+Table1_elements_log <- Table1_log[, -1]
+mu_hat <- colMeans(Table1_elements_log)
+Sigma_hat <- cov(Table1_elements_log)
+p <- ncol(Table1_elements_log)
+
+
+dM <- mahalanobis(Table1_elements_log, center=mu_hat, cov=Sigma_hat)
+upper.quantiles <- qchisq(c(.9, .95, .99), df=p)
+density.at.quantiles <- dchisq(x=upper.quantiles, df=p)
+cut.points <- data.frame(upper.quantiles, density.at.quantiles)
+dm_plot <- ggplot(data.frame(dM), aes(x=dM)) +
+  geom_histogram(aes(y=after_stat(density)), bins=nclass.FD(dM),
+                 fill="white", col="black") +
+  geom_rug() +
+  stat_function(fun=dchisq, args = list(df=p),
+                col="red", linewidth=2, alpha=.7, xlim=c(0,25)) +
+  geom_segment(data=cut.points,
+               aes(x=upper.quantiles, xend=upper.quantiles,
+                   y=rep(0,3), yend=density.at.quantiles),
+               col="blue", size=2) +
+  xlab("Squared Mahalanobis distances and cut points") +
+  ylab("Histogram and density")
+```
+
+    2.  Chi-square
+
+```{r}
+
+```
+
+
+
+4. Exploratory pairs plot 17x17 for the 17 variables
 
     1.  Histograms with notched box plots for each variable to show distribution
 
@@ -113,28 +235,23 @@ desc_pixe %>%
         {All of this in one plot, as seen in the one in inference - 03.pdf
 
 ```{r}
-
+#| fig-width: 12
+#| fig-height: 12
+#| warning: false
+#| message: false
+pairs <- ggpairs(data = Table1_elements_log, 
+        ggplot2::aes(alpha=.5), #Add col=suprise when done the dm^2 work
+        upper = list(continuous = "density", combo = "box_no_facet")) + 
+  ggplot2::scale_color_manual(values=c("lightgray", "green", "blue", "red")) +
+  ggplot2::theme(axis.text.x = element_text(angle=90, hjust=1)) +
+  ggplot2::theme(
+    axis.text = ggplot2::element_blank(),
+    axis.ticks = ggplot2::element_blank(),
+    strip.text = ggplot2::element_text(size = 7)
+  )
 ```
 
-4.  Covariance Matrix and Correlation Heat map
-
-```{r}
-
-```
-
-```{r}
-
-```
-
-5.  Check normality
-
-    1.  Mahalanobis Distance Plot
-
-```{r}
-
-```
-
-    2.  Chi-square
+5. Correlation Heat map
 
 ```{r}
 
@@ -165,25 +282,34 @@ desc_pixe %>%
 1.  Descriptive Statistics (mean, median, sd, min, max of each variable)
 
 ```{r}
-
+#| echo: false
+output_desc_pix
+output_desc_pix_log
+```
+Box Plot
+```{r}
+#| echo: false
+decp_boxplot
 ```
 
-2.  Exploratory pairs plot 17x17 for the 17 variables
+2.  Normality Check 
+
+```{r}
+#| echo: false
+dm_plot
+```
+
+3.  Correlation Heat map
 
 ```{r}
 
 ```
 
-3.  Covariance Matrix and Correlation Heat map
+4.  Exploratory pairs plot 17x17 for the 17 variables
 
 ```{r}
-
-```
-
-4.  Normality Check
-
-```{r}
-
+#| echo: false
+pairs
 ```
 
 5.  Principle component analysis (For the reproducing question)

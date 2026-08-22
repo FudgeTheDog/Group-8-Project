@@ -114,7 +114,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 
 <section id="introduction" class="level3">
 <h3 class="anchored" data-anchor-id="introduction">Introduction</h3>
-<p>The original article, PIXE analysis on Maya blue in Prehispanic and colonial mural paintings, by Sanchez del Rio et al (2006), sampled, analysed and grouped using PCA on murals containing Maya Blue across different archaeological sites. Across the sites they collected 35 samples from murals and either the elements concentration percent or the ratio of micro gram to gram ratio of that element in the mural. From these murals they sampled 18 different chemical elements from sodium to lead. They found with their PCA that 70% of the total variance in the sample population can be described using only the first three principle components and was similar to what was observed in other art forms. The three zones found were CEC, Prehispanic, and convents. with the first clustering in a small group separate from the rest of the samples.</p>
+<p>The original article, PIXE analysis on Maya blue in Prehispanic and colonial mural paintings, by Sanchez del Rio et al (2006), sampled, analysed and grouped using PCA on murals containing Maya Blue across different archaeological sites. Across the sites they collected 35 samples from murals and either the elements concentration percent or the ratio of micro gram to gram ratio of that element in the mural. From these murals they sampled 17 different chemical elements from sodium to lead. They found with their PCA that 70% of the total variance in the sample population can be described using only the first three principle components and was similar to what was observed in other art forms. The three zones found were CEC, Prehispanic, and convents. with the first clustering in a small group separate from the rest of the samples.</p>
 <p>The aim of this analysis is too find groups within the data and reproduce what was found in the original paper. The reason for this is to support the conclusions made by Sanchez del rio et al (2006) about the 3 zones found in the data during their analysis. By doing this we can reassert the claims made about the differences between the different types of murals and their distinct zones of style. This report will contain both a quantitative and qualitative analysis of the data, as well as PCA and cluster analysis to explore the possible groups in the data.</p>
 </section>
 <section id="method" class="level3">
@@ -124,71 +124,138 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <p>We are doing this on the elements, comparing them to each other to find patterns, etc. names down the rows of the table are just the observations</p>
 <p>Methods we are doing based off lectures, can change if needed</p>
 <ol type="1">
+<li>Data Transformation</li>
+</ol>
+<p>There are a few problems with the original data set given in Table 1 of the original paper that need to be corrected to accurately analysis the data. 1. Original Data contains both percentages and Ratios of ug/g (micro gram/gram) concentrations of elements in each mural sample. This makes the two sets of concentrations incomparable due to percentages ceiling of 100. To fix this a log10 transformation will be done on the data, as done in the original paper. 2. To do a log10 transformation we must deal with the () bracketed values in the ratio concentrations. These are estimated concentrations that are below the detection limit. To deal with this in the data we can just treat them as the values estimated and remove the brackets for analysis. 3. Lastly we need to deal with the [] in the data set. These values are specifically listed as 0, but aren’t considered 0. These values are considered close to the detection limit. As log10(0) is not a real number, for the analysis we will convert 0’s in the dataset to 0.1 as a pseudo-count. This will both allow us to compute these values and not shrink the sample size.</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb1"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="co">#Change table around to long ways for boxplots in future as current table arrangement didnt work.</span></span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="co">#This one incase we need it for the non-transformed. </span></span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a>Table1_long <span class="ot">&lt;-</span> Table1 <span class="sc">%&gt;%</span></span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">pivot_longer</span>(</span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a>    <span class="at">cols =</span> <span class="sc">-</span>Elements,</span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a>    <span class="at">names_to =</span> <span class="st">"Element_Group"</span>,     </span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a>    <span class="at">values_to =</span> <span class="st">"Concentrations"</span>   </span>
+<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a>  )</span>
+<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a><span class="co">#Main Table we use for boxplot</span></span>
+<span id="cb1-12"><a href="#cb1-12" aria-hidden="true" tabindex="-1"></a>Table1_long_log <span class="ot">&lt;-</span> Table1_log <span class="sc">%&gt;%</span></span>
+<span id="cb1-13"><a href="#cb1-13" aria-hidden="true" tabindex="-1"></a>  <span class="fu">pivot_longer</span>(</span>
+<span id="cb1-14"><a href="#cb1-14" aria-hidden="true" tabindex="-1"></a>    <span class="at">cols =</span> <span class="sc">-</span>Elements,</span>
+<span id="cb1-15"><a href="#cb1-15" aria-hidden="true" tabindex="-1"></a>    <span class="at">names_to =</span> <span class="st">"Element_Group"</span>,     </span>
+<span id="cb1-16"><a href="#cb1-16" aria-hidden="true" tabindex="-1"></a>    <span class="at">values_to =</span> <span class="st">"Concentrations"</span></span>
+<span id="cb1-17"><a href="#cb1-17" aria-hidden="true" tabindex="-1"></a>  )</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<ol start="2" type="1">
 <li>Descriptive Statistics (mean, median, sd, min, max of each variable)</li>
 </ol>
 <div class="cell">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb1"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a>desc_pixe <span class="ot">&lt;-</span> Table1 <span class="sc">%&gt;%</span> </span>
-<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">summarise</span>(</span>
-<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a>    <span class="fu">across</span>(</span>
-<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a>      <span class="fu">where</span>(is.numeric),</span>
-<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a>      <span class="fu">list</span>(</span>
-<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a>        <span class="at">M =</span> <span class="sc">~</span><span class="fu">mean</span>(.x, <span class="at">na.rm =</span> <span class="cn">TRUE</span>),</span>
-<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a>        <span class="at">SD =</span> <span class="sc">~</span><span class="fu">sd</span>(.x, <span class="at">na.rm =</span> <span class="cn">TRUE</span>),</span>
-<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a>        <span class="at">Median =</span> <span class="sc">~</span><span class="fu">median</span>(.x, <span class="at">na.rm =</span> <span class="cn">TRUE</span>),</span>
-<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a>        <span class="at">Min =</span> <span class="sc">~</span><span class="fu">min</span>(.x, <span class="at">na.rm =</span><span class="cn">TRUE</span>),</span>
-<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a>        <span class="at">Max =</span> <span class="sc">~</span><span class="fu">max</span>(.x, <span class="at">na.rm =</span><span class="cn">TRUE</span>)</span>
-<span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a>      )</span>
-<span id="cb1-12"><a href="#cb1-12" aria-hidden="true" tabindex="-1"></a>    )</span>
-<span id="cb1-13"><a href="#cb1-13" aria-hidden="true" tabindex="-1"></a>  ) <span class="sc">%&gt;%</span> </span>
-<span id="cb1-14"><a href="#cb1-14" aria-hidden="true" tabindex="-1"></a>  <span class="fu">pivot_longer</span>(</span>
-<span id="cb1-15"><a href="#cb1-15" aria-hidden="true" tabindex="-1"></a>    <span class="fu">everything</span>(),</span>
-<span id="cb1-16"><a href="#cb1-16" aria-hidden="true" tabindex="-1"></a>    <span class="at">names_to =</span> <span class="fu">c</span>(<span class="st">"Elements"</span>, <span class="st">"Statistics"</span>),</span>
-<span id="cb1-17"><a href="#cb1-17" aria-hidden="true" tabindex="-1"></a>    <span class="at">names_sep =</span> <span class="st">"_"</span>,</span>
-<span id="cb1-18"><a href="#cb1-18" aria-hidden="true" tabindex="-1"></a>    <span class="at">values_to =</span> <span class="st">"Value"</span></span>
-<span id="cb1-19"><a href="#cb1-19" aria-hidden="true" tabindex="-1"></a>  ) <span class="sc">%&gt;%</span> </span>
-<span id="cb1-20"><a href="#cb1-20" aria-hidden="true" tabindex="-1"></a>  <span class="fu">pivot_wider</span>(</span>
-<span id="cb1-21"><a href="#cb1-21" aria-hidden="true" tabindex="-1"></a>    <span class="at">names_from =</span> Statistics,</span>
-<span id="cb1-22"><a href="#cb1-22" aria-hidden="true" tabindex="-1"></a>    <span class="at">values_from =</span> Value</span>
-<span id="cb1-23"><a href="#cb1-23" aria-hidden="true" tabindex="-1"></a>  )</span>
-<span id="cb1-24"><a href="#cb1-24" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb1-25"><a href="#cb1-25" aria-hidden="true" tabindex="-1"></a>desc_pixe <span class="sc">%&gt;%</span> </span>
-<span id="cb1-26"><a href="#cb1-26" aria-hidden="true" tabindex="-1"></a>  <span class="fu">gt</span>() <span class="sc">%&gt;%</span> </span>
-<span id="cb1-27"><a href="#cb1-27" aria-hidden="true" tabindex="-1"></a>  <span class="fu">cols_label</span>(</span>
-<span id="cb1-28"><a href="#cb1-28" aria-hidden="true" tabindex="-1"></a>    <span class="at">Elements =</span> <span class="st">"Element"</span>,</span>
-<span id="cb1-29"><a href="#cb1-29" aria-hidden="true" tabindex="-1"></a>    <span class="at">M =</span> <span class="fu">md</span>(<span class="st">"*M*"</span>),</span>
-<span id="cb1-30"><a href="#cb1-30" aria-hidden="true" tabindex="-1"></a>    <span class="at">SD =</span> <span class="fu">md</span>(<span class="st">"*SD*"</span>),</span>
-<span id="cb1-31"><a href="#cb1-31" aria-hidden="true" tabindex="-1"></a>    <span class="at">Median =</span> <span class="st">"Median"</span>,</span>
-<span id="cb1-32"><a href="#cb1-32" aria-hidden="true" tabindex="-1"></a>    <span class="at">Min =</span> <span class="st">"Minimum"</span>,</span>
-<span id="cb1-33"><a href="#cb1-33" aria-hidden="true" tabindex="-1"></a>    <span class="at">Max =</span> <span class="st">"Maximum"</span></span>
-<span id="cb1-34"><a href="#cb1-34" aria-hidden="true" tabindex="-1"></a>  ) <span class="sc">%&gt;%</span> </span>
-<span id="cb1-35"><a href="#cb1-35" aria-hidden="true" tabindex="-1"></a>  <span class="fu">fmt_number</span>(</span>
-<span id="cb1-36"><a href="#cb1-36" aria-hidden="true" tabindex="-1"></a>    <span class="at">columns =</span> <span class="fu">c</span>(M, SD, Median, Min, Max),</span>
-<span id="cb1-37"><a href="#cb1-37" aria-hidden="true" tabindex="-1"></a>    <span class="at">decimals =</span> <span class="dv">2</span></span>
-<span id="cb1-38"><a href="#cb1-38" aria-hidden="true" tabindex="-1"></a>  ) <span class="sc">%&gt;%</span> </span>
-<span id="cb1-39"><a href="#cb1-39" aria-hidden="true" tabindex="-1"></a>  <span class="fu">tab_header</span>(</span>
-<span id="cb1-40"><a href="#cb1-40" aria-hidden="true" tabindex="-1"></a>    <span class="at">title =</span> <span class="st">"Descriptive Statistics of Elemental Concentrations"</span></span>
-<span id="cb1-41"><a href="#cb1-41" aria-hidden="true" tabindex="-1"></a>  ) <span class="sc">%&gt;%</span> </span>
-<span id="cb1-42"><a href="#cb1-42" aria-hidden="true" tabindex="-1"></a>  <span class="fu">tab_options</span>(</span>
-<span id="cb1-43"><a href="#cb1-43" aria-hidden="true" tabindex="-1"></a>    <span class="at">table.font.size =</span> <span class="dv">12</span></span>
-<span id="cb1-44"><a href="#cb1-44" aria-hidden="true" tabindex="-1"></a>  )</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb2"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="co">#Box Plot of transformed data</span></span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a>decp_boxplot <span class="ot">&lt;-</span> <span class="fu">ggplot</span>(<span class="at">data =</span> Table1_long_log, <span class="fu">aes</span>(<span class="at">x =</span> Element_Group, <span class="at">y =</span> Concentrations)) <span class="sc">+</span> </span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_boxplot</span>(<span class="fu">aes</span>(<span class="at">fill =</span> Element_Group), <span class="at">notch =</span> <span class="cn">TRUE</span>, <span class="at">outlier.shape =</span> <span class="fl">1.5</span>) <span class="sc">+</span> </span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme_bw</span>() <span class="sc">+</span></span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme</span>(<span class="at">axis.text.x =</span> <span class="fu">element_text</span>(<span class="at">size =</span> <span class="dv">7</span>, <span class="at">angle =</span> <span class="dv">90</span>, <span class="at">hjust =</span> <span class="dv">1</span>, <span class="at">vjust =</span> <span class="fl">0.5</span>), </span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a>        <span class="at">legend.position =</span> <span class="st">"none"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<ol start="3" type="1">
+<li><p>Check normality</p>
+<ol type="1">
+<li>Mahalanobis Distance Plot</li>
+</ol></li>
+</ol>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb3"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a>Table1_elements_log <span class="ot">&lt;-</span> Table1_log[, <span class="sc">-</span><span class="dv">1</span>]</span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a>mu_hat <span class="ot">&lt;-</span> <span class="fu">colMeans</span>(Table1_elements_log)</span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a>Sigma_hat <span class="ot">&lt;-</span> <span class="fu">cov</span>(Table1_elements_log)</span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a>p <span class="ot">&lt;-</span> <span class="fu">ncol</span>(Table1_elements_log)</span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a>dM <span class="ot">&lt;-</span> <span class="fu">mahalanobis</span>(Table1_elements_log, <span class="at">center=</span>mu_hat, <span class="at">cov=</span>Sigma_hat)</span>
+<span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a>upper.quantiles <span class="ot">&lt;-</span> <span class="fu">qchisq</span>(<span class="fu">c</span>(.<span class="dv">9</span>, .<span class="dv">95</span>, .<span class="dv">99</span>), <span class="at">df=</span>p)</span>
+<span id="cb3-9"><a href="#cb3-9" aria-hidden="true" tabindex="-1"></a>density.at.quantiles <span class="ot">&lt;-</span> <span class="fu">dchisq</span>(<span class="at">x=</span>upper.quantiles, <span class="at">df=</span>p)</span>
+<span id="cb3-10"><a href="#cb3-10" aria-hidden="true" tabindex="-1"></a>cut.points <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(upper.quantiles, density.at.quantiles)</span>
+<span id="cb3-11"><a href="#cb3-11" aria-hidden="true" tabindex="-1"></a>dm_plot <span class="ot">&lt;-</span> <span class="fu">ggplot</span>(<span class="fu">data.frame</span>(dM), <span class="fu">aes</span>(<span class="at">x=</span>dM)) <span class="sc">+</span></span>
+<span id="cb3-12"><a href="#cb3-12" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_histogram</span>(<span class="fu">aes</span>(<span class="at">y=</span><span class="fu">after_stat</span>(density)), <span class="at">bins=</span><span class="fu">nclass.FD</span>(dM),</span>
+<span id="cb3-13"><a href="#cb3-13" aria-hidden="true" tabindex="-1"></a>                 <span class="at">fill=</span><span class="st">"white"</span>, <span class="at">col=</span><span class="st">"black"</span>) <span class="sc">+</span></span>
+<span id="cb3-14"><a href="#cb3-14" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_rug</span>() <span class="sc">+</span></span>
+<span id="cb3-15"><a href="#cb3-15" aria-hidden="true" tabindex="-1"></a>  <span class="fu">stat_function</span>(<span class="at">fun=</span>dchisq, <span class="at">args =</span> <span class="fu">list</span>(<span class="at">df=</span>p),</span>
+<span id="cb3-16"><a href="#cb3-16" aria-hidden="true" tabindex="-1"></a>                <span class="at">col=</span><span class="st">"red"</span>, <span class="at">linewidth=</span><span class="dv">2</span>, <span class="at">alpha=</span>.<span class="dv">7</span>, <span class="at">xlim=</span><span class="fu">c</span>(<span class="dv">0</span>,<span class="dv">25</span>)) <span class="sc">+</span></span>
+<span id="cb3-17"><a href="#cb3-17" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_segment</span>(<span class="at">data=</span>cut.points,</span>
+<span id="cb3-18"><a href="#cb3-18" aria-hidden="true" tabindex="-1"></a>               <span class="fu">aes</span>(<span class="at">x=</span>upper.quantiles, <span class="at">xend=</span>upper.quantiles,</span>
+<span id="cb3-19"><a href="#cb3-19" aria-hidden="true" tabindex="-1"></a>                   <span class="at">y=</span><span class="fu">rep</span>(<span class="dv">0</span>,<span class="dv">3</span>), <span class="at">yend=</span>density.at.quantiles),</span>
+<span id="cb3-20"><a href="#cb3-20" aria-hidden="true" tabindex="-1"></a>               <span class="at">col=</span><span class="st">"blue"</span>, <span class="at">size=</span><span class="dv">2</span>) <span class="sc">+</span></span>
+<span id="cb3-21"><a href="#cb3-21" aria-hidden="true" tabindex="-1"></a>  <span class="fu">xlab</span>(<span class="st">"Squared Mahalanobis distances and cut points"</span>) <span class="sc">+</span></span>
+<span id="cb3-22"><a href="#cb3-22" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ylab</span>(<span class="st">"Histogram and density"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Warning: Using `size` aesthetic for lines was deprecated in ggplot2 3.4.0.
+ℹ Please use `linewidth` instead.</code></pre>
+</div>
+</div>
+<pre><code>2.  Chi-square</code></pre>
+<ol start="4" type="1">
+<li><p>Exploratory pairs plot 17x17 for the 17 variables</p>
+<ol type="1">
+<li><p>Histograms with notched box plots for each variable to show distribution</p></li>
+<li><p>contours to show 3rd box plots (can also just do heat map for with contours painted on)</p></li>
+<li><p>Mahalanobis-coloured scatter plots</p>
+<p>{All of this in one plot, as seen in the one in inference - 03.pdf</p></li>
+</ol></li>
+</ol>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb6"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a>pairs <span class="ot">&lt;-</span> <span class="fu">ggpairs</span>(<span class="at">data =</span> Table1_elements_log, </span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a>        ggplot2<span class="sc">::</span><span class="fu">aes</span>(<span class="at">alpha=</span>.<span class="dv">5</span>), <span class="co">#Add col=suprise when done the dm^2 work</span></span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a>        <span class="at">upper =</span> <span class="fu">list</span>(<span class="at">continuous =</span> <span class="st">"density"</span>, <span class="at">combo =</span> <span class="st">"box_no_facet"</span>)) <span class="sc">+</span> </span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a>  ggplot2<span class="sc">::</span><span class="fu">scale_color_manual</span>(<span class="at">values=</span><span class="fu">c</span>(<span class="st">"lightgray"</span>, <span class="st">"green"</span>, <span class="st">"blue"</span>, <span class="st">"red"</span>)) <span class="sc">+</span></span>
+<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a>  ggplot2<span class="sc">::</span><span class="fu">theme</span>(<span class="at">axis.text.x =</span> <span class="fu">element_text</span>(<span class="at">angle=</span><span class="dv">90</span>, <span class="at">hjust=</span><span class="dv">1</span>)) <span class="sc">+</span></span>
+<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a>  ggplot2<span class="sc">::</span><span class="fu">theme</span>(</span>
+<span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a>    <span class="at">axis.text =</span> ggplot2<span class="sc">::</span><span class="fu">element_blank</span>(),</span>
+<span id="cb6-8"><a href="#cb6-8" aria-hidden="true" tabindex="-1"></a>    <span class="at">axis.ticks =</span> ggplot2<span class="sc">::</span><span class="fu">element_blank</span>(),</span>
+<span id="cb6-9"><a href="#cb6-9" aria-hidden="true" tabindex="-1"></a>    <span class="at">strip.text =</span> ggplot2<span class="sc">::</span><span class="fu">element_text</span>(<span class="at">size =</span> <span class="dv">7</span>)</span>
+<span id="cb6-10"><a href="#cb6-10" aria-hidden="true" tabindex="-1"></a>  )</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<ol start="5" type="1">
+<li>Correlation Heat map</li>
+</ol>
+<ol start="6" type="1">
+<li><p>Principle component analysis (For the reproducing question)</p>
+<ol type="1">
+<li>Scree plot</li>
+<li>scores plot</li>
+<li>loadings</li>
+</ol></li>
+</ol>
+<ol start="7" type="1">
+<li>Cluster analysis</li>
+</ol>
+</section>
+<section id="results" class="level3">
+<h3 class="anchored" data-anchor-id="results">Results</h3>
+<ol type="1">
+<li>Show and explain through the analysis of what we described in the method. (Plots will go in here with explanations and thoughts under each.</li>
+</ol>
+<!-- -->
+<ol type="1">
+<li>Descriptive Statistics (mean, median, sd, min, max of each variable)</li>
+</ol>
+<div class="cell">
 <div class="cell-output-display">
-<div id="uwelfghjzd" style="padding-left:0px;padding-right:0px;padding-top:10px;padding-bottom:10px;overflow-x:auto;overflow-y:auto;width:auto;height:auto;">
-<style>#uwelfghjzd table {
+<div id="rahfkwmpvg" style="padding-left:0px;padding-right:0px;padding-top:10px;padding-bottom:10px;overflow-x:auto;overflow-y:auto;width:auto;height:auto;">
+<style>#rahfkwmpvg table {
   font-family: system-ui, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
-#uwelfghjzd thead, #uwelfghjzd tbody, #uwelfghjzd tfoot, #uwelfghjzd tr, #uwelfghjzd td, #uwelfghjzd th {
+#rahfkwmpvg thead, #rahfkwmpvg tbody, #rahfkwmpvg tfoot, #rahfkwmpvg tr, #rahfkwmpvg td, #rahfkwmpvg th {
   border-style: none;
 }
 
-#uwelfghjzd p {
+#rahfkwmpvg p {
   margin: 0;
   padding: 0;
 }
 
-#uwelfghjzd .gt_table {
+#rahfkwmpvg .gt_table {
   display: table;
   border-collapse: collapse;
   line-height: normal;
@@ -214,12 +281,12 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   border-left-color: #D3D3D3;
 }
 
-#uwelfghjzd .gt_caption {
+#rahfkwmpvg .gt_caption {
   padding-top: 4px;
   padding-bottom: 4px;
 }
 
-#uwelfghjzd .gt_title {
+#rahfkwmpvg .gt_title {
   color: #333333;
   font-size: 125%;
   font-weight: initial;
@@ -231,7 +298,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   border-bottom-width: 0;
 }
 
-#uwelfghjzd .gt_subtitle {
+#rahfkwmpvg .gt_subtitle {
   color: #333333;
   font-size: 85%;
   font-weight: initial;
@@ -243,7 +310,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   border-top-width: 0;
 }
 
-#uwelfghjzd .gt_heading {
+#rahfkwmpvg .gt_heading {
   background-color: #FFFFFF;
   text-align: center;
   border-bottom-color: #FFFFFF;
@@ -255,13 +322,13 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   border-right-color: #D3D3D3;
 }
 
-#uwelfghjzd .gt_bottom_border {
+#rahfkwmpvg .gt_bottom_border {
   border-bottom-style: solid;
   border-bottom-width: 2px;
   border-bottom-color: #D3D3D3;
 }
 
-#uwelfghjzd .gt_col_headings {
+#rahfkwmpvg .gt_col_headings {
   border-top-style: solid;
   border-top-width: 2px;
   border-top-color: #D3D3D3;
@@ -276,7 +343,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   border-right-color: #D3D3D3;
 }
 
-#uwelfghjzd .gt_col_heading {
+#rahfkwmpvg .gt_col_heading {
   color: #333333;
   background-color: #FFFFFF;
   font-size: 100%;
@@ -296,7 +363,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   overflow-x: hidden;
 }
 
-#uwelfghjzd .gt_column_spanner_outer {
+#rahfkwmpvg .gt_column_spanner_outer {
   color: #333333;
   background-color: #FFFFFF;
   font-size: 100%;
@@ -308,15 +375,15 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   padding-right: 4px;
 }
 
-#uwelfghjzd .gt_column_spanner_outer:first-child {
+#rahfkwmpvg .gt_column_spanner_outer:first-child {
   padding-left: 0;
 }
 
-#uwelfghjzd .gt_column_spanner_outer:last-child {
+#rahfkwmpvg .gt_column_spanner_outer:last-child {
   padding-right: 0;
 }
 
-#uwelfghjzd .gt_column_spanner {
+#rahfkwmpvg .gt_column_spanner {
   border-bottom-style: solid;
   border-bottom-width: 2px;
   border-bottom-color: #D3D3D3;
@@ -328,11 +395,11 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   width: 100%;
 }
 
-#uwelfghjzd .gt_spanner_row {
+#rahfkwmpvg .gt_spanner_row {
   border-bottom-style: hidden;
 }
 
-#uwelfghjzd .gt_group_heading {
+#rahfkwmpvg .gt_group_heading {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -358,7 +425,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   text-align: left;
 }
 
-#uwelfghjzd .gt_empty_group_heading {
+#rahfkwmpvg .gt_empty_group_heading {
   padding: 0.5px;
   color: #333333;
   background-color: #FFFFFF;
@@ -373,15 +440,15 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   vertical-align: middle;
 }
 
-#uwelfghjzd .gt_from_md > :first-child {
+#rahfkwmpvg .gt_from_md > :first-child {
   margin-top: 0;
 }
 
-#uwelfghjzd .gt_from_md > :last-child {
+#rahfkwmpvg .gt_from_md > :last-child {
   margin-bottom: 0;
 }
 
-#uwelfghjzd .gt_row {
+#rahfkwmpvg .gt_row {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -400,7 +467,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   overflow-x: hidden;
 }
 
-#uwelfghjzd .gt_stub {
+#rahfkwmpvg .gt_stub {
   color: #333333;
   background-color: #FFFFFF;
   font-size: 100%;
@@ -413,7 +480,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   padding-right: 5px;
 }
 
-#uwelfghjzd .gt_stub_row_group {
+#rahfkwmpvg .gt_stub_row_group {
   color: #333333;
   background-color: #FFFFFF;
   font-size: 100%;
@@ -427,15 +494,15 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   vertical-align: top;
 }
 
-#uwelfghjzd .gt_row_group_first td {
+#rahfkwmpvg .gt_row_group_first td {
   border-top-width: 2px;
 }
 
-#uwelfghjzd .gt_row_group_first th {
+#rahfkwmpvg .gt_row_group_first th {
   border-top-width: 2px;
 }
 
-#uwelfghjzd .gt_summary_row {
+#rahfkwmpvg .gt_summary_row {
   color: #333333;
   background-color: #FFFFFF;
   text-transform: inherit;
@@ -445,16 +512,16 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   padding-right: 5px;
 }
 
-#uwelfghjzd .gt_first_summary_row {
+#rahfkwmpvg .gt_first_summary_row {
   border-top-style: solid;
   border-top-color: #D3D3D3;
 }
 
-#uwelfghjzd .gt_first_summary_row.thick {
+#rahfkwmpvg .gt_first_summary_row.thick {
   border-top-width: 2px;
 }
 
-#uwelfghjzd .gt_last_summary_row {
+#rahfkwmpvg .gt_last_summary_row {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -464,7 +531,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   border-bottom-color: #D3D3D3;
 }
 
-#uwelfghjzd .gt_grand_summary_row {
+#rahfkwmpvg .gt_grand_summary_row {
   color: #333333;
   background-color: #FFFFFF;
   text-transform: inherit;
@@ -474,7 +541,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   padding-right: 5px;
 }
 
-#uwelfghjzd .gt_first_grand_summary_row {
+#rahfkwmpvg .gt_first_grand_summary_row {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -484,7 +551,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   border-top-color: #D3D3D3;
 }
 
-#uwelfghjzd .gt_last_grand_summary_row_top {
+#rahfkwmpvg .gt_last_grand_summary_row_top {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -494,11 +561,11 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   border-bottom-color: #D3D3D3;
 }
 
-#uwelfghjzd .gt_striped {
+#rahfkwmpvg .gt_striped {
   background-color: rgba(128, 128, 128, 0.05);
 }
 
-#uwelfghjzd .gt_table_body {
+#rahfkwmpvg .gt_table_body {
   border-top-style: solid;
   border-top-width: 2px;
   border-top-color: #D3D3D3;
@@ -507,7 +574,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   border-bottom-color: #D3D3D3;
 }
 
-#uwelfghjzd .gt_footnotes {
+#rahfkwmpvg .gt_footnotes {
   color: #333333;
   background-color: #FFFFFF;
   border-bottom-style: none;
@@ -521,7 +588,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   border-right-color: #D3D3D3;
 }
 
-#uwelfghjzd .gt_footnote {
+#rahfkwmpvg .gt_footnote {
   margin: 0px;
   font-size: 90%;
   padding-top: 4px;
@@ -530,7 +597,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   padding-right: 5px;
 }
 
-#uwelfghjzd .gt_sourcenotes {
+#rahfkwmpvg .gt_sourcenotes {
   color: #333333;
   background-color: #FFFFFF;
   border-bottom-style: none;
@@ -544,7 +611,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   border-right-color: #D3D3D3;
 }
 
-#uwelfghjzd .gt_sourcenote {
+#rahfkwmpvg .gt_sourcenote {
   font-size: 90%;
   padding-top: 4px;
   padding-bottom: 4px;
@@ -552,72 +619,72 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   padding-right: 5px;
 }
 
-#uwelfghjzd .gt_left {
+#rahfkwmpvg .gt_left {
   text-align: left;
 }
 
-#uwelfghjzd .gt_center {
+#rahfkwmpvg .gt_center {
   text-align: center;
 }
 
-#uwelfghjzd .gt_right {
+#rahfkwmpvg .gt_right {
   text-align: right;
   font-variant-numeric: tabular-nums;
 }
 
-#uwelfghjzd .gt_font_normal {
+#rahfkwmpvg .gt_font_normal {
   font-weight: normal;
 }
 
-#uwelfghjzd .gt_font_bold {
+#rahfkwmpvg .gt_font_bold {
   font-weight: bold;
 }
 
-#uwelfghjzd .gt_font_italic {
+#rahfkwmpvg .gt_font_italic {
   font-style: italic;
 }
 
-#uwelfghjzd .gt_super {
+#rahfkwmpvg .gt_super {
   font-size: 65%;
 }
 
-#uwelfghjzd .gt_footnote_marks {
+#rahfkwmpvg .gt_footnote_marks {
   font-size: 75%;
   vertical-align: 0.4em;
   position: initial;
 }
 
-#uwelfghjzd .gt_asterisk {
+#rahfkwmpvg .gt_asterisk {
   font-size: 100%;
   vertical-align: 0;
 }
 
-#uwelfghjzd .gt_indent_1 {
+#rahfkwmpvg .gt_indent_1 {
   text-indent: 5px;
 }
 
-#uwelfghjzd .gt_indent_2 {
+#rahfkwmpvg .gt_indent_2 {
   text-indent: 10px;
 }
 
-#uwelfghjzd .gt_indent_3 {
+#rahfkwmpvg .gt_indent_3 {
   text-indent: 15px;
 }
 
-#uwelfghjzd .gt_indent_4 {
+#rahfkwmpvg .gt_indent_4 {
   text-indent: 20px;
 }
 
-#uwelfghjzd .gt_indent_5 {
+#rahfkwmpvg .gt_indent_5 {
   text-indent: 25px;
 }
 
-#uwelfghjzd .katex-display {
+#rahfkwmpvg .katex-display {
   display: inline-flex !important;
   margin-bottom: 0.75em !important;
 }
 
-#uwelfghjzd div.Reactable > div.rt-table > div.rt-thead > div.rt-tr.rt-tr-group-header > div.rt-th-group:after {
+#rahfkwmpvg div.Reactable > div.rt-table > div.rt-thead > div.rt-tr.rt-tr-group-header > div.rt-th-group:after {
   height: 0px !important;
 }
 </style>
@@ -625,11 +692,14 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <table class="gt_table caption-top table table-sm table-striped small" data-quarto-bootstrap="false">
 <thead>
 <tr class="gt_heading header">
-<td colspan="6" class="gt_heading gt_title gt_font_normal gt_bottom_border">Descriptive Statistics of Elemental Concentrations</td>
+<td colspan="6" class="gt_heading gt_title gt_font_normal">Descriptive Statistics of Elemental Concentrations</td>
 </tr>
-<tr class="gt_col_headings even">
+<tr class="gt_heading even">
+<td colspan="6" class="gt_heading gt_subtitle gt_font_normal gt_bottom_border">Non-Transformed</td>
+</tr>
+<tr class="gt_col_headings header">
 <th id="Elements" class="gt_col_heading gt_columns_bottom_border gt_left" data-quarto-table-cell-role="th" scope="col">Element</th>
-<th id="M" class="gt_col_heading gt_columns_bottom_border gt_right" data-quarto-table-cell-role="th" scope="col"><em>M</em></th>
+<th id="M" class="gt_col_heading gt_columns_bottom_border gt_right" data-quarto-table-cell-role="th" scope="col">Mean</th>
 <th id="SD" class="gt_col_heading gt_columns_bottom_border gt_right" data-quarto-table-cell-role="th" scope="col"><em>SD</em></th>
 <th id="Median" class="gt_col_heading gt_columns_bottom_border gt_right" data-quarto-table-cell-role="th" scope="col">Median</th>
 <th id="Min" class="gt_col_heading gt_columns_bottom_border gt_right" data-quarto-table-cell-role="th" scope="col">Minimum</th>
@@ -639,10 +709,10 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <tbody class="gt_table_body">
 <tr class="odd">
 <td class="gt_row gt_left" headers="Elements">11-Na*</td>
-<td class="gt_row gt_right" headers="M">0.36</td>
-<td class="gt_row gt_right" headers="SD">0.46</td>
-<td class="gt_row gt_right" headers="Median">0.32</td>
-<td class="gt_row gt_right" headers="Min">−0.43</td>
+<td class="gt_row gt_right" headers="M">0.45</td>
+<td class="gt_row gt_right" headers="SD">0.37</td>
+<td class="gt_row gt_right" headers="Median">0.33</td>
+<td class="gt_row gt_right" headers="Min">0.11</td>
 <td class="gt_row gt_right" headers="Max">1.71</td>
 </tr>
 <tr class="even">
@@ -671,26 +741,26 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </tr>
 <tr class="odd">
 <td class="gt_row gt_left" headers="Elements">16-S*</td>
-<td class="gt_row gt_right" headers="M">1.69</td>
-<td class="gt_row gt_right" headers="SD">3.03</td>
+<td class="gt_row gt_right" headers="M">1.71</td>
+<td class="gt_row gt_right" headers="SD">3.02</td>
 <td class="gt_row gt_right" headers="Median">0.47</td>
-<td class="gt_row gt_right" headers="Min">−0.16</td>
+<td class="gt_row gt_right" headers="Min">0.06</td>
 <td class="gt_row gt_right" headers="Max">12.90</td>
 </tr>
 <tr class="even">
 <td class="gt_row gt_left" headers="Elements">17-Cl*</td>
-<td class="gt_row gt_right" headers="M">0.18</td>
-<td class="gt_row gt_right" headers="SD">0.35</td>
+<td class="gt_row gt_right" headers="M">0.20</td>
+<td class="gt_row gt_right" headers="SD">0.32</td>
 <td class="gt_row gt_right" headers="Median">0.08</td>
-<td class="gt_row gt_right" headers="Min">−0.07</td>
+<td class="gt_row gt_right" headers="Min">0.01</td>
 <td class="gt_row gt_right" headers="Max">1.36</td>
 </tr>
 <tr class="odd">
 <td class="gt_row gt_left" headers="Elements">19-K*</td>
-<td class="gt_row gt_right" headers="M">0.46</td>
+<td class="gt_row gt_right" headers="M">0.47</td>
 <td class="gt_row gt_right" headers="SD">0.40</td>
 <td class="gt_row gt_right" headers="Median">0.32</td>
-<td class="gt_row gt_right" headers="Min">−0.06</td>
+<td class="gt_row gt_right" headers="Min">0.06</td>
 <td class="gt_row gt_right" headers="Max">1.71</td>
 </tr>
 <tr class="even">
@@ -711,50 +781,50 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </tr>
 <tr class="even">
 <td class="gt_row gt_left" headers="Elements">15-P</td>
-<td class="gt_row gt_right" headers="M">7,568.33</td>
-<td class="gt_row gt_right" headers="SD">26,110.87</td>
-<td class="gt_row gt_right" headers="Median">−895.00</td>
-<td class="gt_row gt_right" headers="Min">−1,700.00</td>
+<td class="gt_row gt_right" headers="M">4,759.19</td>
+<td class="gt_row gt_right" headers="SD">18,652.00</td>
+<td class="gt_row gt_right" headers="Median">0.10</td>
+<td class="gt_row gt_right" headers="Min">0.10</td>
 <td class="gt_row gt_right" headers="Max">99,600.00</td>
 </tr>
 <tr class="odd">
 <td class="gt_row gt_left" headers="Elements">22-Ti</td>
-<td class="gt_row gt_right" headers="M">1,816.86</td>
-<td class="gt_row gt_right" headers="SD">1,286.20</td>
+<td class="gt_row gt_right" headers="M">1,846.57</td>
+<td class="gt_row gt_right" headers="SD">1,241.87</td>
 <td class="gt_row gt_right" headers="Median">1,470.00</td>
-<td class="gt_row gt_right" headers="Min">−520.00</td>
+<td class="gt_row gt_right" headers="Min">520.00</td>
 <td class="gt_row gt_right" headers="Max">5,010.00</td>
 </tr>
 <tr class="even">
 <td class="gt_row gt_left" headers="Elements">25-Mn</td>
-<td class="gt_row gt_right" headers="M">1,133.43</td>
-<td class="gt_row gt_right" headers="SD">2,657.21</td>
-<td class="gt_row gt_right" headers="Median">−120.00</td>
-<td class="gt_row gt_right" headers="Min">−360.00</td>
+<td class="gt_row gt_right" headers="M">1,359.71</td>
+<td class="gt_row gt_right" headers="SD">2,545.58</td>
+<td class="gt_row gt_right" headers="Median">310.00</td>
+<td class="gt_row gt_right" headers="Min">120.00</td>
 <td class="gt_row gt_right" headers="Max">9,120.00</td>
 </tr>
 <tr class="odd">
 <td class="gt_row gt_left" headers="Elements">28-Ni</td>
-<td class="gt_row gt_right" headers="M">12.09</td>
-<td class="gt_row gt_right" headers="SD">30.31</td>
-<td class="gt_row gt_right" headers="Median">16.00</td>
-<td class="gt_row gt_right" headers="Min">−29.00</td>
+<td class="gt_row gt_right" headers="M">21.69</td>
+<td class="gt_row gt_right" headers="SD">24.18</td>
+<td class="gt_row gt_right" headers="Median">17.00</td>
+<td class="gt_row gt_right" headers="Min">3.00</td>
 <td class="gt_row gt_right" headers="Max">154.00</td>
 </tr>
 <tr class="even">
 <td class="gt_row gt_left" headers="Elements">29-Cu</td>
-<td class="gt_row gt_right" headers="M">2.71</td>
-<td class="gt_row gt_right" headers="SD">15.87</td>
-<td class="gt_row gt_right" headers="Median">−4.00</td>
-<td class="gt_row gt_right" headers="Min">−17.00</td>
+<td class="gt_row gt_right" headers="M">12.35</td>
+<td class="gt_row gt_right" headers="SD">9.75</td>
+<td class="gt_row gt_right" headers="Median">10.00</td>
+<td class="gt_row gt_right" headers="Min">0.10</td>
 <td class="gt_row gt_right" headers="Max">40.00</td>
 </tr>
 <tr class="odd">
 <td class="gt_row gt_left" headers="Elements">30-Zn</td>
-<td class="gt_row gt_right" headers="M">31.80</td>
-<td class="gt_row gt_right" headers="SD">37.29</td>
+<td class="gt_row gt_right" headers="M">34.77</td>
+<td class="gt_row gt_right" headers="SD">34.45</td>
 <td class="gt_row gt_right" headers="Median">21.00</td>
-<td class="gt_row gt_right" headers="Min">−14.00</td>
+<td class="gt_row gt_right" headers="Min">6.00</td>
 <td class="gt_row gt_right" headers="Max">164.00</td>
 </tr>
 <tr class="even">
@@ -778,58 +848,658 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 
 </div>
 </div>
+<div class="cell-output-display">
+<div id="tzscjjplhk" style="padding-left:0px;padding-right:0px;padding-top:10px;padding-bottom:10px;overflow-x:auto;overflow-y:auto;width:auto;height:auto;">
+<style>#tzscjjplhk table {
+  font-family: system-ui, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+#tzscjjplhk thead, #tzscjjplhk tbody, #tzscjjplhk tfoot, #tzscjjplhk tr, #tzscjjplhk td, #tzscjjplhk th {
+  border-style: none;
+}
+
+#tzscjjplhk p {
+  margin: 0;
+  padding: 0;
+}
+
+#tzscjjplhk .gt_table {
+  display: table;
+  border-collapse: collapse;
+  line-height: normal;
+  margin-left: auto;
+  margin-right: auto;
+  color: #333333;
+  font-size: 12px;
+  font-weight: normal;
+  font-style: normal;
+  background-color: #FFFFFF;
+  width: auto;
+  border-top-style: solid;
+  border-top-width: 2px;
+  border-top-color: #A8A8A8;
+  border-right-style: none;
+  border-right-width: 2px;
+  border-right-color: #D3D3D3;
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #A8A8A8;
+  border-left-style: none;
+  border-left-width: 2px;
+  border-left-color: #D3D3D3;
+}
+
+#tzscjjplhk .gt_caption {
+  padding-top: 4px;
+  padding-bottom: 4px;
+}
+
+#tzscjjplhk .gt_title {
+  color: #333333;
+  font-size: 125%;
+  font-weight: initial;
+  padding-top: 4px;
+  padding-bottom: 4px;
+  padding-left: 5px;
+  padding-right: 5px;
+  border-bottom-color: #FFFFFF;
+  border-bottom-width: 0;
+}
+
+#tzscjjplhk .gt_subtitle {
+  color: #333333;
+  font-size: 85%;
+  font-weight: initial;
+  padding-top: 3px;
+  padding-bottom: 5px;
+  padding-left: 5px;
+  padding-right: 5px;
+  border-top-color: #FFFFFF;
+  border-top-width: 0;
+}
+
+#tzscjjplhk .gt_heading {
+  background-color: #FFFFFF;
+  text-align: center;
+  border-bottom-color: #FFFFFF;
+  border-left-style: none;
+  border-left-width: 1px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 1px;
+  border-right-color: #D3D3D3;
+}
+
+#tzscjjplhk .gt_bottom_border {
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+}
+
+#tzscjjplhk .gt_col_headings {
+  border-top-style: solid;
+  border-top-width: 2px;
+  border-top-color: #D3D3D3;
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+  border-left-style: none;
+  border-left-width: 1px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 1px;
+  border-right-color: #D3D3D3;
+}
+
+#tzscjjplhk .gt_col_heading {
+  color: #333333;
+  background-color: #FFFFFF;
+  font-size: 100%;
+  font-weight: normal;
+  text-transform: inherit;
+  border-left-style: none;
+  border-left-width: 1px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 1px;
+  border-right-color: #D3D3D3;
+  vertical-align: bottom;
+  padding-top: 5px;
+  padding-bottom: 6px;
+  padding-left: 5px;
+  padding-right: 5px;
+  overflow-x: hidden;
+}
+
+#tzscjjplhk .gt_column_spanner_outer {
+  color: #333333;
+  background-color: #FFFFFF;
+  font-size: 100%;
+  font-weight: normal;
+  text-transform: inherit;
+  padding-top: 0;
+  padding-bottom: 0;
+  padding-left: 4px;
+  padding-right: 4px;
+}
+
+#tzscjjplhk .gt_column_spanner_outer:first-child {
+  padding-left: 0;
+}
+
+#tzscjjplhk .gt_column_spanner_outer:last-child {
+  padding-right: 0;
+}
+
+#tzscjjplhk .gt_column_spanner {
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+  vertical-align: bottom;
+  padding-top: 5px;
+  padding-bottom: 5px;
+  overflow-x: hidden;
+  display: inline-block;
+  width: 100%;
+}
+
+#tzscjjplhk .gt_spanner_row {
+  border-bottom-style: hidden;
+}
+
+#tzscjjplhk .gt_group_heading {
+  padding-top: 8px;
+  padding-bottom: 8px;
+  padding-left: 5px;
+  padding-right: 5px;
+  color: #333333;
+  background-color: #FFFFFF;
+  font-size: 100%;
+  font-weight: initial;
+  text-transform: inherit;
+  border-top-style: solid;
+  border-top-width: 2px;
+  border-top-color: #D3D3D3;
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+  border-left-style: none;
+  border-left-width: 1px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 1px;
+  border-right-color: #D3D3D3;
+  vertical-align: middle;
+  text-align: left;
+}
+
+#tzscjjplhk .gt_empty_group_heading {
+  padding: 0.5px;
+  color: #333333;
+  background-color: #FFFFFF;
+  font-size: 100%;
+  font-weight: initial;
+  border-top-style: solid;
+  border-top-width: 2px;
+  border-top-color: #D3D3D3;
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+  vertical-align: middle;
+}
+
+#tzscjjplhk .gt_from_md > :first-child {
+  margin-top: 0;
+}
+
+#tzscjjplhk .gt_from_md > :last-child {
+  margin-bottom: 0;
+}
+
+#tzscjjplhk .gt_row {
+  padding-top: 8px;
+  padding-bottom: 8px;
+  padding-left: 5px;
+  padding-right: 5px;
+  margin: 10px;
+  border-top-style: solid;
+  border-top-width: 1px;
+  border-top-color: #D3D3D3;
+  border-left-style: none;
+  border-left-width: 1px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 1px;
+  border-right-color: #D3D3D3;
+  vertical-align: middle;
+  overflow-x: hidden;
+}
+
+#tzscjjplhk .gt_stub {
+  color: #333333;
+  background-color: #FFFFFF;
+  font-size: 100%;
+  font-weight: initial;
+  text-transform: inherit;
+  border-right-style: solid;
+  border-right-width: 2px;
+  border-right-color: #D3D3D3;
+  padding-left: 5px;
+  padding-right: 5px;
+}
+
+#tzscjjplhk .gt_stub_row_group {
+  color: #333333;
+  background-color: #FFFFFF;
+  font-size: 100%;
+  font-weight: initial;
+  text-transform: inherit;
+  border-right-style: solid;
+  border-right-width: 2px;
+  border-right-color: #D3D3D3;
+  padding-left: 5px;
+  padding-right: 5px;
+  vertical-align: top;
+}
+
+#tzscjjplhk .gt_row_group_first td {
+  border-top-width: 2px;
+}
+
+#tzscjjplhk .gt_row_group_first th {
+  border-top-width: 2px;
+}
+
+#tzscjjplhk .gt_summary_row {
+  color: #333333;
+  background-color: #FFFFFF;
+  text-transform: inherit;
+  padding-top: 8px;
+  padding-bottom: 8px;
+  padding-left: 5px;
+  padding-right: 5px;
+}
+
+#tzscjjplhk .gt_first_summary_row {
+  border-top-style: solid;
+  border-top-color: #D3D3D3;
+}
+
+#tzscjjplhk .gt_first_summary_row.thick {
+  border-top-width: 2px;
+}
+
+#tzscjjplhk .gt_last_summary_row {
+  padding-top: 8px;
+  padding-bottom: 8px;
+  padding-left: 5px;
+  padding-right: 5px;
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+}
+
+#tzscjjplhk .gt_grand_summary_row {
+  color: #333333;
+  background-color: #FFFFFF;
+  text-transform: inherit;
+  padding-top: 8px;
+  padding-bottom: 8px;
+  padding-left: 5px;
+  padding-right: 5px;
+}
+
+#tzscjjplhk .gt_first_grand_summary_row {
+  padding-top: 8px;
+  padding-bottom: 8px;
+  padding-left: 5px;
+  padding-right: 5px;
+  border-top-style: double;
+  border-top-width: 6px;
+  border-top-color: #D3D3D3;
+}
+
+#tzscjjplhk .gt_last_grand_summary_row_top {
+  padding-top: 8px;
+  padding-bottom: 8px;
+  padding-left: 5px;
+  padding-right: 5px;
+  border-bottom-style: double;
+  border-bottom-width: 6px;
+  border-bottom-color: #D3D3D3;
+}
+
+#tzscjjplhk .gt_striped {
+  background-color: rgba(128, 128, 128, 0.05);
+}
+
+#tzscjjplhk .gt_table_body {
+  border-top-style: solid;
+  border-top-width: 2px;
+  border-top-color: #D3D3D3;
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+}
+
+#tzscjjplhk .gt_footnotes {
+  color: #333333;
+  background-color: #FFFFFF;
+  border-bottom-style: none;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+  border-left-style: none;
+  border-left-width: 2px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 2px;
+  border-right-color: #D3D3D3;
+}
+
+#tzscjjplhk .gt_footnote {
+  margin: 0px;
+  font-size: 90%;
+  padding-top: 4px;
+  padding-bottom: 4px;
+  padding-left: 5px;
+  padding-right: 5px;
+}
+
+#tzscjjplhk .gt_sourcenotes {
+  color: #333333;
+  background-color: #FFFFFF;
+  border-bottom-style: none;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+  border-left-style: none;
+  border-left-width: 2px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 2px;
+  border-right-color: #D3D3D3;
+}
+
+#tzscjjplhk .gt_sourcenote {
+  font-size: 90%;
+  padding-top: 4px;
+  padding-bottom: 4px;
+  padding-left: 5px;
+  padding-right: 5px;
+}
+
+#tzscjjplhk .gt_left {
+  text-align: left;
+}
+
+#tzscjjplhk .gt_center {
+  text-align: center;
+}
+
+#tzscjjplhk .gt_right {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+#tzscjjplhk .gt_font_normal {
+  font-weight: normal;
+}
+
+#tzscjjplhk .gt_font_bold {
+  font-weight: bold;
+}
+
+#tzscjjplhk .gt_font_italic {
+  font-style: italic;
+}
+
+#tzscjjplhk .gt_super {
+  font-size: 65%;
+}
+
+#tzscjjplhk .gt_footnote_marks {
+  font-size: 75%;
+  vertical-align: 0.4em;
+  position: initial;
+}
+
+#tzscjjplhk .gt_asterisk {
+  font-size: 100%;
+  vertical-align: 0;
+}
+
+#tzscjjplhk .gt_indent_1 {
+  text-indent: 5px;
+}
+
+#tzscjjplhk .gt_indent_2 {
+  text-indent: 10px;
+}
+
+#tzscjjplhk .gt_indent_3 {
+  text-indent: 15px;
+}
+
+#tzscjjplhk .gt_indent_4 {
+  text-indent: 20px;
+}
+
+#tzscjjplhk .gt_indent_5 {
+  text-indent: 25px;
+}
+
+#tzscjjplhk .katex-display {
+  display: inline-flex !important;
+  margin-bottom: 0.75em !important;
+}
+
+#tzscjjplhk div.Reactable > div.rt-table > div.rt-thead > div.rt-tr.rt-tr-group-header > div.rt-th-group:after {
+  height: 0px !important;
+}
+</style>
+
+<table class="gt_table caption-top table table-sm table-striped small" data-quarto-bootstrap="false">
+<thead>
+<tr class="gt_heading header">
+<td colspan="6" class="gt_heading gt_title gt_font_normal">Descriptive Statistics of Elemental Concentrations</td>
+</tr>
+<tr class="gt_heading even">
+<td colspan="6" class="gt_heading gt_subtitle gt_font_normal gt_bottom_border">Log10 Transformation</td>
+</tr>
+<tr class="gt_col_headings header">
+<th id="Elements" class="gt_col_heading gt_columns_bottom_border gt_left" data-quarto-table-cell-role="th" scope="col">Element</th>
+<th id="M" class="gt_col_heading gt_columns_bottom_border gt_right" data-quarto-table-cell-role="th" scope="col">Mean</th>
+<th id="SD" class="gt_col_heading gt_columns_bottom_border gt_right" data-quarto-table-cell-role="th" scope="col"><em>SD</em></th>
+<th id="Median" class="gt_col_heading gt_columns_bottom_border gt_right" data-quarto-table-cell-role="th" scope="col">Median</th>
+<th id="Min" class="gt_col_heading gt_columns_bottom_border gt_right" data-quarto-table-cell-role="th" scope="col">Minimum</th>
+<th id="Max" class="gt_col_heading gt_columns_bottom_border gt_right" data-quarto-table-cell-role="th" scope="col">Maximum</th>
+</tr>
+</thead>
+<tbody class="gt_table_body">
+<tr class="odd">
+<td class="gt_row gt_left" headers="Elements">11-Na*</td>
+<td class="gt_row gt_right" headers="M">−0.44</td>
+<td class="gt_row gt_right" headers="SD">0.28</td>
+<td class="gt_row gt_right" headers="Median">−0.48</td>
+<td class="gt_row gt_right" headers="Min">−0.96</td>
+<td class="gt_row gt_right" headers="Max">0.23</td>
+</tr>
+<tr class="even">
+<td class="gt_row gt_left" headers="Elements">12-Mg*</td>
+<td class="gt_row gt_right" headers="M">0.33</td>
+<td class="gt_row gt_right" headers="SD">0.35</td>
+<td class="gt_row gt_right" headers="Median">0.24</td>
+<td class="gt_row gt_right" headers="Min">−0.42</td>
+<td class="gt_row gt_right" headers="Max">0.97</td>
+</tr>
+<tr class="odd">
+<td class="gt_row gt_left" headers="Elements">13-Al*</td>
+<td class="gt_row gt_right" headers="M">0.50</td>
+<td class="gt_row gt_right" headers="SD">0.19</td>
+<td class="gt_row gt_right" headers="Median">0.52</td>
+<td class="gt_row gt_right" headers="Min">0.01</td>
+<td class="gt_row gt_right" headers="Max">0.87</td>
+</tr>
+<tr class="even">
+<td class="gt_row gt_left" headers="Elements">14-Si*</td>
+<td class="gt_row gt_right" headers="M">1.09</td>
+<td class="gt_row gt_right" headers="SD">0.22</td>
+<td class="gt_row gt_right" headers="Median">1.06</td>
+<td class="gt_row gt_right" headers="Min">0.66</td>
+<td class="gt_row gt_right" headers="Max">1.49</td>
+</tr>
+<tr class="odd">
+<td class="gt_row gt_left" headers="Elements">16-S*</td>
+<td class="gt_row gt_right" headers="M">−0.23</td>
+<td class="gt_row gt_right" headers="SD">0.61</td>
+<td class="gt_row gt_right" headers="Median">−0.33</td>
+<td class="gt_row gt_right" headers="Min">−1.22</td>
+<td class="gt_row gt_right" headers="Max">1.11</td>
+</tr>
+<tr class="even">
+<td class="gt_row gt_left" headers="Elements">17-Cl*</td>
+<td class="gt_row gt_right" headers="M">−1.02</td>
+<td class="gt_row gt_right" headers="SD">0.52</td>
+<td class="gt_row gt_right" headers="Median">−1.10</td>
+<td class="gt_row gt_right" headers="Min">−2.00</td>
+<td class="gt_row gt_right" headers="Max">0.13</td>
+</tr>
+<tr class="odd">
+<td class="gt_row gt_left" headers="Elements">19-K*</td>
+<td class="gt_row gt_right" headers="M">−0.47</td>
+<td class="gt_row gt_right" headers="SD">0.35</td>
+<td class="gt_row gt_right" headers="Median">−0.49</td>
+<td class="gt_row gt_right" headers="Min">−1.22</td>
+<td class="gt_row gt_right" headers="Max">0.23</td>
+</tr>
+<tr class="even">
+<td class="gt_row gt_left" headers="Elements">20-Ca*</td>
+<td class="gt_row gt_right" headers="M">1.50</td>
+<td class="gt_row gt_right" headers="SD">0.26</td>
+<td class="gt_row gt_right" headers="Median">1.58</td>
+<td class="gt_row gt_right" headers="Min">0.46</td>
+<td class="gt_row gt_right" headers="Max">1.76</td>
+</tr>
+<tr class="odd">
+<td class="gt_row gt_left" headers="Elements">26-Fe*</td>
+<td class="gt_row gt_right" headers="M">−0.02</td>
+<td class="gt_row gt_right" headers="SD">0.25</td>
+<td class="gt_row gt_right" headers="Median">−0.03</td>
+<td class="gt_row gt_right" headers="Min">−0.42</td>
+<td class="gt_row gt_right" headers="Max">0.71</td>
+</tr>
+<tr class="even">
+<td class="gt_row gt_left" headers="Elements">15-P</td>
+<td class="gt_row gt_right" headers="M">1.03</td>
+<td class="gt_row gt_right" headers="SD">2.17</td>
+<td class="gt_row gt_right" headers="Median">−1.00</td>
+<td class="gt_row gt_right" headers="Min">−1.00</td>
+<td class="gt_row gt_right" headers="Max">5.00</td>
+</tr>
+<tr class="odd">
+<td class="gt_row gt_left" headers="Elements">22-Ti</td>
+<td class="gt_row gt_right" headers="M">3.18</td>
+<td class="gt_row gt_right" headers="SD">0.28</td>
+<td class="gt_row gt_right" headers="Median">3.17</td>
+<td class="gt_row gt_right" headers="Min">2.72</td>
+<td class="gt_row gt_right" headers="Max">3.70</td>
+</tr>
+<tr class="even">
+<td class="gt_row gt_left" headers="Elements">25-Mn</td>
+<td class="gt_row gt_right" headers="M">2.67</td>
+<td class="gt_row gt_right" headers="SD">0.55</td>
+<td class="gt_row gt_right" headers="Median">2.49</td>
+<td class="gt_row gt_right" headers="Min">2.08</td>
+<td class="gt_row gt_right" headers="Max">3.96</td>
+</tr>
+<tr class="odd">
+<td class="gt_row gt_left" headers="Elements">28-Ni</td>
+<td class="gt_row gt_right" headers="M">1.23</td>
+<td class="gt_row gt_right" headers="SD">0.27</td>
+<td class="gt_row gt_right" headers="Median">1.23</td>
+<td class="gt_row gt_right" headers="Min">0.48</td>
+<td class="gt_row gt_right" headers="Max">2.19</td>
+</tr>
+<tr class="even">
+<td class="gt_row gt_left" headers="Elements">29-Cu</td>
+<td class="gt_row gt_right" headers="M">0.92</td>
+<td class="gt_row gt_right" headers="SD">0.48</td>
+<td class="gt_row gt_right" headers="Median">1.00</td>
+<td class="gt_row gt_right" headers="Min">−1.00</td>
+<td class="gt_row gt_right" headers="Max">1.60</td>
+</tr>
+<tr class="odd">
+<td class="gt_row gt_left" headers="Elements">30-Zn</td>
+<td class="gt_row gt_right" headers="M">1.38</td>
+<td class="gt_row gt_right" headers="SD">0.37</td>
+<td class="gt_row gt_right" headers="Median">1.32</td>
+<td class="gt_row gt_right" headers="Min">0.78</td>
+<td class="gt_row gt_right" headers="Max">2.21</td>
+</tr>
+<tr class="even">
+<td class="gt_row gt_left" headers="Elements">38-Sr</td>
+<td class="gt_row gt_right" headers="M">2.74</td>
+<td class="gt_row gt_right" headers="SD">0.45</td>
+<td class="gt_row gt_right" headers="Median">2.70</td>
+<td class="gt_row gt_right" headers="Min">1.95</td>
+<td class="gt_row gt_right" headers="Max">3.93</td>
+</tr>
+<tr class="odd">
+<td class="gt_row gt_left" headers="Elements">82-Pb</td>
+<td class="gt_row gt_right" headers="M">0.96</td>
+<td class="gt_row gt_right" headers="SD">0.61</td>
+<td class="gt_row gt_right" headers="Median">0.95</td>
+<td class="gt_row gt_right" headers="Min">0.00</td>
+<td class="gt_row gt_right" headers="Max">2.18</td>
+</tr>
+</tbody>
+</table>
+
+</div>
+</div>
+</div>
+<p>Box Plot</p>
+<div class="cell">
+<div class="cell-output cell-output-stderr">
+<pre><code>Notch went outside hinges
+ℹ Do you want `notch = FALSE`?</code></pre>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="Group_8_File_files/figure-html/unnamed-chunk-14-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
 </div>
 <ol start="2" type="1">
-<li><p>Exploratory pairs plot 17x17 for the 17 variables</p>
-<ol type="1">
-<li><p>Histograms with notched box plots for each variable to show distribution</p></li>
-<li><p>contours to show 3rd box plots (can also just do heat map for with contours painted on)</p></li>
-<li><p>Mahalanobis-coloured scatter plots</p>
-<p>{All of this in one plot, as seen in the one in inference - 03.pdf</p></li>
-</ol></li>
-</ol>
-<ol start="3" type="1">
-<li>Covariance Matrix and Correlation Heat map</li>
-</ol>
-<ol start="4" type="1">
-<li><p>Check normality</p>
-<ol type="1">
-<li>Mahalanobis Distance Plot</li>
-</ol></li>
-</ol>
-<ol start="2" type="1">
-<li>Chi-square</li>
-</ol>
-<ol start="5" type="1">
-<li><p>Principle component analysis (For the reproducing question)</p>
-<ol type="1">
-<li>Scree plot</li>
-<li>scores plot</li>
-<li>loadings</li>
-</ol></li>
-</ol>
-<ol start="6" type="1">
-<li>Cluster analysis</li>
-</ol>
-</section>
-<section id="results" class="level3">
-<h3 class="anchored" data-anchor-id="results">Results</h3>
-<ol type="1">
-<li>Show and explain through the analysis of what we described in the method. (Plots will go in here with explanations and thoughts under each.</li>
-</ol>
-<!-- -->
-<ol type="1">
-<li>Descriptive Statistics (mean, median, sd, min, max of each variable)</li>
-</ol>
-<ol start="2" type="1">
-<li>Exploratory pairs plot 17x17 for the 17 variables</li>
-</ol>
-<ol start="3" type="1">
-<li>Covariance Matrix and Correlation Heat map</li>
-</ol>
-<ol start="4" type="1">
 <li>Normality Check</li>
 </ol>
+<div class="cell">
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="Group_8_File_files/figure-html/unnamed-chunk-15-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+</div>
+<ol start="3" type="1">
+<li>Correlation Heat map</li>
+</ol>
+<ol start="4" type="1">
+<li>Exploratory pairs plot 17x17 for the 17 variables</li>
+</ol>
+<div class="cell">
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="Group_8_File_files/figure-html/unnamed-chunk-17-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+</div>
 <ol start="5" type="1">
 <li>Principle component analysis (For the reproducing question)</li>
 </ol>
